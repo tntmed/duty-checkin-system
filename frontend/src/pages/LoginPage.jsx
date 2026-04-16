@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { loginApi } from '../services/api'
 
@@ -149,8 +149,8 @@ export default function LoginPage() {
               <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 style={styles.title}>Duty Check-in System</h1>
-          <p style={styles.subtitle}>Sign in with your employee credentials</p>
+          <h1 style={styles.title}>ระบบลงเวร ศูนย์สารสนเทศ</h1>
+          <p style={styles.subtitle}>เข้าสู่ระบบด้วยรหัสประจำตัว</p>
         </div>
 
         {error && <div style={styles.error}>{error}</div>}
@@ -196,6 +196,12 @@ export default function LoginPage() {
                 ...(focusedField === 'password' ? styles.inputFocus : {}),
               }}
             />
+          </div>
+
+          <div style={{ textAlign: 'right', marginBottom: 8, marginTop: -8 }}>
+            <Link to="/forgot-password" style={{ fontSize: 13, color: '#1a73e8', textDecoration: 'none' }}>
+              ลืมรหัสผ่าน?
+            </Link>
           </div>
 
           <button

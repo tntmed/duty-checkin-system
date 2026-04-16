@@ -6,16 +6,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "oracle+oracledb://system:password@localhost:1521/XEPDB1")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./duty_checkin.db")
 
-engine = create_engine(
-    DATABASE_URL,
-    echo=os.getenv("SQL_ECHO", "false").lower() == "true",
-    pool_size=10,
-    max_overflow=20,
-    pool_timeout=30,
-    pool_recycle=3600,
-)
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        echo=os.getenv("SQL_ECHO", "false").lower() == "true",
+    )
+else:
+    engine = create_engine(
+        DATABASE_URL,
+        echo=os.getenv("SQL_ECHO", "false").lower() == "true",
+        pool_size=10,
+        max_overflow=20,
+        pool_timeout=30,
+        pool_recycle=3600,
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

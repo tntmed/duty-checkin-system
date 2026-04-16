@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const API = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: 'http://localhost:8001',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -85,5 +85,13 @@ export const uploadIncidentFile = (incidentId, formData) =>
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 export const getUsers = () => API.get('/users/')
+export const adminResetPassword = (userId) => API.post(`/users/${userId}/reset-password`)
+export const toggleUserActive = (userId) => API.patch(`/users/${userId}/toggle-active`)
+export const downloadUserTemplate = () =>
+  API.get('/users/import/template', { responseType: 'blob' })
+export const importUsersExcel = (formData) =>
+  API.post('/users/import/excel', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
 
 export default API

@@ -5,6 +5,11 @@ import CheckinPage from './pages/CheckinPage'
 import DutyPage from './pages/DutyPage'
 import DashboardPage from './pages/DashboardPage'
 import IncidentDetailPage from './pages/IncidentDetailPage'
+import ImportUsersPage from './pages/ImportUsersPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
+import ChangePasswordPage from './pages/ChangePasswordPage'
+import AdminUsersPage from './pages/AdminUsersPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -34,6 +39,11 @@ function AppRoutes() {
       />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/incidents/:incidentId" element={<ProtectedRoute><IncidentDetailPage /></ProtectedRoute>} />
+      <Route path="/import-users" element={<ProtectedRoute><ImportUsersPage /></ProtectedRoute>} />
+      <Route path="/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
+      <Route path="/admin/users" element={<ProtectedRoute><AdminUsersPage /></ProtectedRoute>} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="*" element={<Navigate to="/checkin" replace />} />
     </Routes>
   )

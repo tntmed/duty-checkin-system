@@ -475,7 +475,7 @@ export default function DutyPage() {
     return (
       <div style={s.page}>
         <nav style={s.navbar}>
-          <h1 style={s.navTitle} onClick={() => navigate('/checkin')}>Duty Check-in System</h1>
+          <h1 style={s.navTitle} onClick={() => navigate('/checkin')}>ระบบลงเวร ศูนย์สารสนเทศ</h1>
         </nav>
         <div style={s.loadingPage}>Loading duty details...</div>
       </div>
@@ -486,7 +486,7 @@ export default function DutyPage() {
     return (
       <div style={s.page}>
         <nav style={s.navbar}>
-          <h1 style={s.navTitle} onClick={() => navigate('/checkin')}>Duty Check-in System</h1>
+          <h1 style={s.navTitle} onClick={() => navigate('/checkin')}>ระบบลงเวร ศูนย์สารสนเทศ</h1>
         </nav>
         <div style={s.loadingPage}>Duty not found. <span style={{ color: '#1a73e8', cursor: 'pointer' }} onClick={() => navigate('/checkin')}>Go back</span></div>
       </div>
@@ -500,7 +500,7 @@ export default function DutyPage() {
       {/* Navbar */}
       <nav style={s.navbar}>
         <h1 style={s.navTitle} onClick={() => navigate('/checkin')}>
-          Duty Check-in System
+          ระบบลงเวร ศูนย์สารสนเทศ
         </h1>
         <div style={s.navRight}>
           <span>{user?.full_name || user?.employee_code}</span>
@@ -529,15 +529,6 @@ export default function DutyPage() {
         <div style={s.card}>
           <div style={s.cardTitle}>
             <span>Duty #{duty.id} Details</span>
-            {!isCheckedOut && (
-              <button
-                style={{ ...s.btn, ...s.btnDanger }}
-                onClick={handleCheckout}
-                disabled={checkingOut}
-              >
-                {checkingOut ? 'Checking out...' : 'Check Out'}
-              </button>
-            )}
             {isCheckedOut && (
               <span style={{ ...s.badge, backgroundColor: '#dcfce7', color: '#16a34a', fontSize: '13px' }}>
                 Checked Out

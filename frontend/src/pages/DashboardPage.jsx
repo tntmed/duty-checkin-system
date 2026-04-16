@@ -9,11 +9,11 @@ import API from '../services/api'
 const AUTO_REFRESH_MS = 30_000
 
 const ATTENDANCE_OPTIONS = [
-  { value: '', label: 'All Statuses' },
-  { value: 'PRESENT', label: 'Present' },
-  { value: 'LATE', label: 'Late' },
-  { value: 'ABSENT', label: 'Absent' },
-  { value: 'EXCUSED', label: 'Excused' },
+  { value: '', label: 'ทุกสถานะ' },
+  { value: 'PRESENT', label: 'มาปกติ' },
+  { value: 'LATE', label: 'มาสาย' },
+  { value: 'ABSENT', label: 'ขาด' },
+  { value: 'EXCUSED', label: 'ลา' },
 ]
 
 // ============================================================
@@ -219,6 +219,8 @@ export default function DashboardPage() {
   const [error, setError] = useState('')
   const [lastRefreshed, setLastRefreshed] = useState(null)
   const [hoveredRow, setHoveredRow] = useState(null)
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportRange, setExportRange] = useState({ date_from: '', date_to: '' })
 
   // Active KPI filter: null | 'incidents' | 'issues' | 'pending'
   const [kpiFilter, setKpiFilter] = useState(null)
@@ -300,9 +302,18 @@ export default function DashboardPage() {
 
   const handleLogout = () => { logout(); navigate('/login', { replace: true }) }
 
+  const openExportModal = () => {
+    setExportRange({
+      date_from: filters.duty_date || today,
+      date_to: filters.duty_date || today,
+    })
+    setShowExportModal(true)
+  }
+
   const handleExport = () => {
     const params = new URLSearchParams()
-    if (filters.duty_date) params.set('duty_date', filters.duty_date)
+    if (exportRange.date_from) params.set('date_from', exportRange.date_from)
+    if (exportRange.date_to) params.set('date_to', exportRange.date_to)
     if (filters.role_id) params.set('role_id', filters.role_id)
     if (filters.shift_id) params.set('shift_id', filters.shift_id)
     if (filters.attendance_status) params.set('attendance_status', filters.attendance_status)
@@ -310,24 +321,27 @@ export default function DashboardPage() {
     if (kpiFilter === 'issues') params.set('has_issues', 'true')
     if (kpiFilter === 'pending') params.set('pending_checkout', 'true')
     const token = localStorage.getItem('token')
-    const url = `http://localhost:8000/dashboard/export?${params.toString()}`
-    // Use fetch to include auth header, then trigger download
+    const url = `http://localhost:8001/dashboard/export?${params.toString()}`
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.blob())
       .then(blob => {
         const a = document.createElement('a')
         a.href = URL.createObjectURL(blob)
-        a.download = `duties_${filters.duty_date || 'today'}.csv`
+        const suffix = exportRange.date_from === exportRange.date_to
+          ? exportRange.date_from
+          : `${exportRange.date_from}_to_${exportRange.date_to}`
+        a.download = `duties_${suffix}.xlsx`
         a.click()
         URL.revokeObjectURL(a.href)
       })
+    setShowExportModal(false)
   }
 
   if (loading && !summary) return (
     <div style={s.page}>
       <nav style={s.navbar}>
         <div style={s.navLeft}>
-          <h1 style={s.navTitle}>Duty Check-in System</h1>
+          <h1 style={s.navTitle}>ระบบลงเวร ศูนย์สารสนเทศ</h1>
           <span style={s.navTag}>Dashboard</span>
         </div>
       </nav>
@@ -340,7 +354,7 @@ export default function DashboardPage() {
       {/* ── Navbar ── */}
       <nav style={s.navbar}>
         <div style={s.navLeft}>
-          <h1 style={s.navTitle} onClick={() => navigate('/checkin')}>Duty Check-in System</h1>
+          <h1 style={s.navTitle} onClick={() => navigate('/checkin')}>ระบบลงเวร ศูนย์สารสนเทศ</h1>
           <span style={s.navTag}>Dashboard</span>
         </div>
         <div style={s.navRight}>
@@ -374,10 +388,10 @@ export default function DashboardPage() {
             </button>
             <button
               style={{ ...s.refreshBtn, backgroundColor: '#16a34a', color: '#fff', border: '1.5px solid #15803d' }}
-              onClick={handleExport}
-              title="Export current view as CSV"
+              onClick={openExportModal}
+              title="Export as Excel"
             >
-              ↓ Export CSV
+              ↓ Export Excel
             </button>
           </div>
         </div>
@@ -602,6 +616,71 @@ export default function DashboardPage() {
           <span>Click any row to open Duty Detail</span>
         </div>
       </div>
+
+      {/* ── Export Modal ── */}
+      {showExportModal && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+        }} onClick={() => setShowExportModal(false)}>
+          <div style={{
+            backgroundColor: '#fff', borderRadius: '14px', padding: '32px 28px', width: '360px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+          }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 6px', fontSize: '17px', fontWeight: '700', color: '#1a1a2e' }}>
+              Export Excel
+            </h3>
+            <p style={{ margin: '0 0 24px', fontSize: '13px', color: '#6b7280' }}>
+              เลือกช่วงวันที่ที่ต้องการ export
+            </p>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
+                วันที่เริ่มต้น
+              </label>
+              <input
+                type="date"
+                style={{ ...s.filterInput, width: '100%', boxSizing: 'border-box' }}
+                value={exportRange.date_from}
+                onChange={(e) => setExportRange(r => ({ ...r, date_from: e.target.value }))}
+              />
+            </div>
+
+            <div style={{ marginBottom: '28px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
+                วันที่สิ้นสุด
+              </label>
+              <input
+                type="date"
+                style={{ ...s.filterInput, width: '100%', boxSizing: 'border-box' }}
+                value={exportRange.date_to}
+                min={exportRange.date_from}
+                onChange={(e) => setExportRange(r => ({ ...r, date_to: e.target.value }))}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                style={{ ...s.resetBtn, padding: '9px 20px' }}
+                onClick={() => setShowExportModal(false)}
+              >
+                ยกเลิก
+              </button>
+              <button
+                style={{
+                  backgroundColor: '#16a34a', color: '#fff', border: 'none',
+                  padding: '9px 24px', borderRadius: '8px', cursor: 'pointer',
+                  fontSize: '14px', fontWeight: '600',
+                }}
+                onClick={handleExport}
+                disabled={!exportRange.date_from || !exportRange.date_to}
+              >
+                ↓ Download
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

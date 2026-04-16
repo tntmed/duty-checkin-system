@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { getUserRoles, getShifts, getDutiesToday, checkin } from '../services/api'
+import { getRoles, getShifts, getDutiesToday, checkin } from '../services/api'
 
 const styles = {
   page: {
@@ -211,7 +211,7 @@ export default function CheckinPage() {
     setError('')
     try {
       const [rolesRes, shiftsRes, dutiesRes] = await Promise.all([
-        getUserRoles(),
+        getRoles(),
         getShifts(),
         getDutiesToday(),
       ])
@@ -264,7 +264,7 @@ export default function CheckinPage() {
     return (
       <div style={styles.page}>
         <nav style={styles.navbar}>
-          <h1 style={styles.navTitle}>Duty Check-in System</h1>
+          <h1 style={styles.navTitle}>ระบบลงเวร ศูนย์สารสนเทศ</h1>
         </nav>
         <div style={styles.loadingText}>Loading...</div>
       </div>
@@ -274,7 +274,7 @@ export default function CheckinPage() {
   return (
     <div style={styles.page}>
       <nav style={styles.navbar}>
-        <h1 style={styles.navTitle}>Duty Check-in System</h1>
+        <h1 style={styles.navTitle}>ระบบลงเวร ศูนย์สารสนเทศ</h1>
         <div style={styles.navUser}>
           <span>{user?.full_name || user?.employee_code}</span>
           <button

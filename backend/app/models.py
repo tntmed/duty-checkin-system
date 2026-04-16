@@ -1,9 +1,8 @@
-"""SQLAlchemy ORM models for Oracle Database."""
+"""SQLAlchemy ORM models."""
 from sqlalchemy import (
     Column, Integer, String, DateTime, Date, Text, Boolean,
     ForeignKey, UniqueConstraint, Numeric
 )
-from sqlalchemy import Sequence as SASequence
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -13,7 +12,7 @@ from .db import Base
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, SASequence("seq_users", start=1), primary_key=True)
+    id = Column(Integer, primary_key=True)
     employee_code = Column(String(50), unique=True, nullable=False)
     full_name = Column(String(200), nullable=False)
     hashed_password = Column(String(255), nullable=False)
@@ -34,7 +33,7 @@ class User(Base):
 class Role(Base):
     __tablename__ = "roles"
 
-    id = Column(Integer, SASequence("seq_roles", start=1), primary_key=True)
+    id = Column(Integer, primary_key=True)
     name = Column(String(100), unique=True, nullable=False)
     description = Column(String(500), nullable=True)
     is_active = Column(Numeric(1), default=1, nullable=False)
@@ -49,7 +48,7 @@ class Role(Base):
 class UserRole(Base):
     __tablename__ = "user_roles"
 
-    id = Column(Integer, SASequence("seq_user_roles", start=1), primary_key=True)
+    id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     role_id = Column(Integer, ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
     assigned_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
@@ -66,7 +65,7 @@ class UserRole(Base):
 class DutyShift(Base):
     __tablename__ = "duty_shifts"
 
-    id = Column(Integer, SASequence("seq_duty_shifts", start=1), primary_key=True)
+    id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
     start_time = Column(String(10), nullable=False)
     end_time = Column(String(10), nullable=False)
@@ -79,7 +78,7 @@ class DutyShift(Base):
 class Duty(Base):
     __tablename__ = "duties"
 
-    id = Column(Integer, SASequence("seq_duties", start=1), primary_key=True)
+    id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
     shift_id = Column(Integer, ForeignKey("duty_shifts.id"), nullable=False)
@@ -102,7 +101,7 @@ class Duty(Base):
 class ChecklistTemplate(Base):
     __tablename__ = "checklist_templates"
 
-    id = Column(Integer, SASequence("seq_checklist_templates", start=1), primary_key=True)
+    id = Column(Integer, primary_key=True)
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
     item_order = Column(Integer, default=0, nullable=False)
     item_text = Column(String(500), nullable=False)
@@ -118,7 +117,7 @@ class ChecklistTemplate(Base):
 class ChecklistLog(Base):
     __tablename__ = "checklist_logs"
 
-    id = Column(Integer, SASequence("seq_checklist_logs", start=1), primary_key=True)
+    id = Column(Integer, primary_key=True)
     duty_id = Column(Integer, ForeignKey("duties.id", ondelete="CASCADE"), nullable=False)
     template_id = Column(Integer, ForeignKey("checklist_templates.id"), nullable=False)
     status = Column(String(20), default="NA", nullable=False)
@@ -134,7 +133,7 @@ class ChecklistLog(Base):
 class Incident(Base):
     __tablename__ = "incidents"
 
-    id = Column(Integer, SASequence("seq_incidents", start=1), primary_key=True)
+    id = Column(Integer, primary_key=True)
     duty_id = Column(Integer, ForeignKey("duties.id", ondelete="CASCADE"), nullable=False)
     incident_type = Column(String(20), nullable=False)
     detail = Column(Text, nullable=False)
@@ -151,10 +150,22 @@ class Incident(Base):
     assignee = relationship("User", foreign_keys=[assigned_to])
 
 
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id         = Column(Integer, primary_key=True)
+    user_id    = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token      = Column(String(128), unique=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used       = Column(Boolean, default=False, nullable=False)
+
+    user = relationship("User")
+
+
 class Attachment(Base):
     __tablename__ = "attachments"
 
-    id = Column(Integer, SASequence("seq_attachments", start=1), primary_key=True)
+    id = Column(Integer, primary_key=True)
     file_name = Column(String(255), nullable=False)
     file_path = Column(String(500), nullable=False)
     file_size = Column(Integer, nullable=True)

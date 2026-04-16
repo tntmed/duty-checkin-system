@@ -301,6 +301,22 @@ class DashboardResponse(BaseModel):
 
 
 # ============================================================
+# Password schemas
+# ============================================================
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+class ForgotPasswordRequest(BaseModel):
+    employee_code: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+# ============================================================
 # Attachment schemas
 # ============================================================
 

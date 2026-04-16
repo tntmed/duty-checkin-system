@@ -7,11 +7,22 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 from .routers import auth, users, roles, duties, checklists, incidents, dashboard
+from .db import engine, Base, SessionLocal
+from . import models
+from .seed import seed
 
 load_dotenv()
 
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBearer
+
+# Create tables and seed data on startup
+Base.metadata.create_all(bind=engine)
+_db = SessionLocal()
+try:
+    seed(_db)
+finally:
+    _db.close()
 
 app = FastAPI(
     title="Duty Check-in System API",
@@ -22,7 +33,7 @@ app = FastAPI(
 # CORS middleware - allow the Vite dev server origin
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

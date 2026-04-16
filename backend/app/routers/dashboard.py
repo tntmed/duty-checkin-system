@@ -1,11 +1,12 @@
 """Dashboard and timeline router."""
-import csv
 from datetime import date, datetime
-from io import StringIO
+from io import BytesIO
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from sqlalchemy import func, case
 from sqlalchemy.orm import Session
 
@@ -284,7 +285,9 @@ def get_duty_timeline(
 def export_dashboard_csv(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
-    duty_date: Optional[date] = Query(None, description="Filter by date (YYYY-MM-DD). Defaults to today."),
+    duty_date: Optional[date] = Query(None, description="Single date filter (legacy). Ignored when date_from/date_to are set."),
+    date_from: Optional[date] = Query(None, description="Range start date (YYYY-MM-DD)"),
+    date_to: Optional[date] = Query(None, description="Range end date (YYYY-MM-DD)"),
     role_id: Optional[int] = Query(None),
     shift_id: Optional[int] = Query(None),
     attendance_status: Optional[str] = Query(None),
@@ -292,15 +295,25 @@ def export_dashboard_csv(
     has_incidents: Optional[bool] = Query(None),
     pending_checkout: Optional[bool] = Query(None),
 ):
-    """Export duties as CSV. Accepts the same filters as /dashboard/duties."""
-    today = duty_date or date.today()
+    """Export duties as Excel. Supports single date or date range (date_from / date_to)."""
+    today = date.today()
+
+    # Resolve effective date range
+    if date_from or date_to:
+        eff_from = date_from or (date_to or today)
+        eff_to = date_to or (date_from or today)
+    else:
+        eff_from = eff_to = duty_date or today
+
+    if eff_from > eff_to:
+        eff_from, eff_to = eff_to, eff_from
 
     query = (
         db.query(models.Duty)
         .join(models.User, models.Duty.user_id == models.User.id)
         .join(models.Role, models.Duty.role_id == models.Role.id)
         .join(models.DutyShift, models.Duty.shift_id == models.DutyShift.id)
-        .filter(models.Duty.duty_date == today)
+        .filter(models.Duty.duty_date >= eff_from, models.Duty.duty_date <= eff_to)
     )
     if role_id is not None:
         query = query.filter(models.Duty.role_id == role_id)
@@ -326,8 +339,8 @@ def export_dashboard_csv(
             "full_name": duty.user.full_name,
             "role_name": duty.role.name,
             "shift_name": duty.shift.name,
-            "checkin_time": duty.checkin_time.isoformat() if duty.checkin_time else "",
-            "checkout_time": duty.checkout_time.isoformat() if duty.checkout_time else "",
+            "checkin_time": duty.checkin_time.strftime("%d/%m/%Y %H:%M") if duty.checkin_time else "",
+            "checkout_time": duty.checkout_time.strftime("%d/%m/%Y %H:%M") if duty.checkout_time else "",
             "attendance_status": duty.attendance_status or "",
             "issue_count": issue_count,
             "incident_count": incident_count,
@@ -338,20 +351,57 @@ def export_dashboard_csv(
     if has_incidents is True:
         rows = [r for r in rows if r["incident_count"] > 0]
 
-    output = StringIO()
-    fieldnames = [
-        "duty_id", "duty_date", "employee_code", "full_name",
-        "role_name", "shift_name", "checkin_time", "checkout_time",
-        "attendance_status", "issue_count", "incident_count",
-    ]
-    writer = csv.DictWriter(output, fieldnames=fieldnames)
-    writer.writeheader()
-    writer.writerows(rows)
+    # Build Excel
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "รายงานการลงเวร"
 
-    filename = f"duties_{today}.csv"
+    header_fill = PatternFill(start_color="1F4E79", end_color="1F4E79", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    center = Alignment(horizontal="center", vertical="center")
+    thin = Side(style="thin", color="CCCCCC")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    headers = [
+        ("ลำดับ", 8), ("วันที่", 14), ("รหัส", 12), ("ชื่อ-นามสกุล", 28),
+        ("ตำแหน่ง/Role", 20), ("เวร/Shift", 22), ("เวลา Check-in", 18),
+        ("เวลา Check-out", 18), ("สถานะ", 12), ("ปัญหา Checklist", 18), ("Incidents", 12),
+    ]
+    for col, (h, w) in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = center
+        cell.border = border
+        ws.column_dimensions[cell.column_letter].width = w
+
+    ws.row_dimensions[1].height = 22
+
+    status_th = {"PRESENT": "มาปกติ", "LATE": "มาสาย", "ABSENT": "ขาด", "EXCUSED": "ลา"}
+
+    for i, r in enumerate(rows, 1):
+        row_data = [
+            i, r["duty_date"], r["employee_code"], r["full_name"],
+            r["role_name"], r["shift_name"], r["checkin_time"], r["checkout_time"],
+            status_th.get(r["attendance_status"], r["attendance_status"]),
+            r["issue_count"], r["incident_count"],
+        ]
+        bg = "FFFFFF" if i % 2 == 0 else "F0F4FF"
+        fill = PatternFill(start_color=bg, end_color=bg, fill_type="solid")
+        for col, val in enumerate(row_data, 1):
+            cell = ws.cell(row=i + 1, column=col, value=val)
+            cell.border = border
+            cell.fill = fill
+            cell.alignment = Alignment(vertical="center")
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    filename = f"duties_{eff_from}_to_{eff_to}.xlsx" if eff_from != eff_to else f"duties_{eff_from}.xlsx"
     return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="text/csv",
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 

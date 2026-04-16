@@ -2,8 +2,9 @@
 from datetime import datetime, timedelta
 from typing import Optional
 import os
+import secrets
 
-from fastapi import APIRouter, Depends, HTTPException, status, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Form, BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
@@ -11,6 +12,7 @@ from dotenv import load_dotenv
 
 from ..db import get_db
 from .. import crud, schemas, models
+from ..email_utils import send_reset_email
 
 load_dotenv()
 
@@ -113,3 +115,71 @@ def login(request: schemas.LoginRequest, db: Session = Depends(get_db)):
         token_type="bearer",
         user=user_data,
     )
+
+
+@router.post("/change-password")
+def change_password(
+    req: schemas.ChangePasswordRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Change password for the currently logged-in user."""
+    if not crud.verify_password(req.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="รหัสผ่านปัจจุบันไม่ถูกต้อง")
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร")
+    current_user.hashed_password = crud.get_password_hash(req.new_password)
+    db.commit()
+    return {"message": "เปลี่ยนรหัสผ่านสำเร็จ"}
+
+
+@router.post("/forgot-password")
+def forgot_password(
+    req: schemas.ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Send a password reset link to the user's registered email."""
+    user = crud.get_user_by_employee_code(db, req.employee_code)
+    # Always return success to prevent user enumeration
+    if not user or not user.email:
+        return {"message": "หากมี email ในระบบ ระบบได้ส่งลิงก์รีเซ็ตให้แล้ว"}
+
+    # Invalidate old tokens
+    db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.user_id == user.id,
+        models.PasswordResetToken.used == False,
+    ).update({"used": True})
+
+    token = secrets.token_urlsafe(32)
+    expires = datetime.utcnow() + timedelta(minutes=30)
+    db.add(models.PasswordResetToken(user_id=user.id, token=token, expires_at=expires))
+    db.commit()
+
+    background_tasks.add_task(send_reset_email, user.email, user.full_name, token)
+    return {"message": "หากมี email ในระบบ ระบบได้ส่งลิงก์รีเซ็ตให้แล้ว"}
+
+
+@router.post("/reset-password")
+def reset_password(
+    req: schemas.ResetPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    """Reset password using a valid token from email."""
+    record = db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.token == req.token,
+        models.PasswordResetToken.used == False,
+    ).first()
+
+    if not record:
+        raise HTTPException(status_code=400, detail="ลิงก์ไม่ถูกต้องหรือถูกใช้ไปแล้ว")
+    if datetime.utcnow() > record.expires_at:
+        raise HTTPException(status_code=400, detail="ลิงก์หมดอายุแล้ว กรุณาขอใหม่")
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร")
+
+    user = db.query(models.User).filter(models.User.id == record.user_id).first()
+    user.hashed_password = crud.get_password_hash(req.new_password)
+    record.used = True
+    db.commit()
+    return {"message": "ตั้งรหัสผ่านใหม่สำเร็จ กรุณาเข้าสู่ระบบ"}
