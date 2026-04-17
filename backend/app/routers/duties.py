@@ -60,6 +60,9 @@ def _build_duty_response(duty: models.Duty) -> schemas.DutyResponse:
         checkin_time=duty.checkin_time,
         checkout_time=duty.checkout_time,
         attendance_status=duty.attendance_status,
+        attendance_confirmed=bool(duty.attendance_confirmed),
+        attendance_confirmed_by=duty.attendance_confirmed_by,
+        attendance_confirmed_at=duty.attendance_confirmed_at,
         notes=duty.notes,
         created_at=duty.created_at,
         user=user_resp,
@@ -140,6 +143,21 @@ def get_duty(
     duty = crud.get_duty(db, duty_id=duty_id)
     if not duty:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Duty not found")
+    return _build_duty_response(duty)
+
+
+@router.patch("/{duty_id}/attendance", response_model=schemas.DutyResponse)
+def confirm_attendance(
+    duty_id: int,
+    req: schemas.AttendanceConfirmRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Confirm or update attendance status. Only สิบเวร of that day (or admin) may confirm."""
+    duty, error = crud.confirm_attendance(db, duty_id, current_user.id, req.attendance_status.value)
+    if duty is None:
+        code = status.HTTP_404_NOT_FOUND if "ไม่พบ" in error else status.HTTP_403_FORBIDDEN
+        raise HTTPException(status_code=code, detail=error)
     return _build_duty_response(duty)
 
 

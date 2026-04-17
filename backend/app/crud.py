@@ -183,6 +183,13 @@ def create_duty(db: Session, user_id: int, checkin_req: schemas.CheckinRequest) 
 
     shift = db.query(models.DutyShift).filter(models.DutyShift.id == checkin_req.shift_id).first()
 
+    # Auto-calculate attendance: PRESENT if within 15 min of shift start, else LATE
+    attendance_status = "PRESENT"
+    if shift:
+        sh, sm = map(int, shift.start_time.split(':'))
+        shift_start = datetime.combine(today, datetime.min.time()).replace(hour=sh, minute=sm)
+        attendance_status = "PRESENT" if now <= shift_start + timedelta(minutes=15) else "LATE"
+
     duty = models.Duty(
         user_id=user_id,
         role_id=checkin_req.role_id,
@@ -190,7 +197,8 @@ def create_duty(db: Session, user_id: int, checkin_req: schemas.CheckinRequest) 
         duty_date=today,
         checkin_time=now,
         checkout_time=None,
-        attendance_status="PRESENT",
+        attendance_status=attendance_status,
+        attendance_confirmed=False,
         notes=checkin_req.notes,
     )
     db.add(duty)
@@ -463,6 +471,56 @@ def create_attachment(
     db.commit()
     db.refresh(attachment)
     return attachment
+
+
+def confirm_attendance(
+    db: Session,
+    duty_id: int,
+    confirmer_id: int,
+    new_status: str,
+) -> tuple:
+    """
+    Confirm/update attendance status for a duty.
+    Only the สิบเวร (duty officer) checked in on the same day, or an admin, may confirm.
+    After confirming, edits are allowed within 24 hours.
+    Returns (duty, error_message). On success error_message is None.
+    """
+    duty = db.query(models.Duty).filter(models.Duty.id == duty_id).first()
+    if not duty:
+        return None, "ไม่พบข้อมูลการเวร"
+
+    confirmer = db.query(models.User).filter(models.User.id == confirmer_id).first()
+    if not confirmer:
+        return None, "ไม่พบผู้ใช้"
+
+    # Permission: admin OR user who has a duty as สิบเวร on the same duty_date
+    if not confirmer.is_admin:
+        sib_duty = (
+            db.query(models.Duty)
+            .join(models.Role, models.Duty.role_id == models.Role.id)
+            .filter(
+                models.Duty.user_id == confirmer_id,
+                models.Duty.duty_date == duty.duty_date,
+                models.Role.name == "สิบเวร",
+            )
+            .first()
+        )
+        if not sib_duty:
+            return None, "ไม่มีสิทธิ์: ต้องเป็นนายสิบเวรของวันนั้นเท่านั้น"
+
+    # 24-hour edit window after first confirm
+    if duty.attendance_confirmed and duty.attendance_confirmed_at:
+        elapsed = (_now() - duty.attendance_confirmed_at).total_seconds()
+        if elapsed > 86400:
+            return None, "ไม่สามารถแก้ไขได้: เกิน 24 ชั่วโมงหลัง confirm แล้ว"
+
+    duty.attendance_status = new_status
+    duty.attendance_confirmed = True
+    duty.attendance_confirmed_by = confirmer_id
+    duty.attendance_confirmed_at = _now()
+    db.commit()
+    db.refresh(duty)
+    return duty, None
 
 
 def get_attachments_by_duty(db: Session, duty_id: int) -> List[models.Attachment]:

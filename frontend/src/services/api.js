@@ -56,6 +56,7 @@ export const getRoleChecklists = (roleId) => API.get(`/roles/${roleId}/checklist
 // ============================================================
 export const checkin = (data) => API.post('/duties/checkin', data)
 export const checkout = (dutyId) => API.post(`/duties/${dutyId}/checkout`)
+export const confirmAttendance = (dutyId, data) => API.patch(`/duties/${dutyId}/attendance`, data)
 export const getDutiesToday = () => API.get('/duties/today')
 export const getDuty = (dutyId) => API.get(`/duties/${dutyId}`)
 export const getDutyAttachments = (dutyId) => API.get(`/duties/${dutyId}/attachments`)

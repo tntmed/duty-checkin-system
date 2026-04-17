@@ -131,6 +131,10 @@ class CheckinRequest(BaseModel):
     notes: Optional[str] = None
 
 
+class AttendanceConfirmRequest(BaseModel):
+    attendance_status: AttendanceStatus
+
+
 class DutyResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -142,6 +146,9 @@ class DutyResponse(BaseModel):
     checkin_time: Optional[datetime] = None
     checkout_time: Optional[datetime] = None
     attendance_status: str
+    attendance_confirmed: bool = False
+    attendance_confirmed_by: Optional[int] = None
+    attendance_confirmed_at: Optional[datetime] = None
     notes: Optional[str] = None
     created_at: datetime
     user: Optional[UserResponse] = None

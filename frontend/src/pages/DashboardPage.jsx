@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useIsMobile } from '../hooks/useIsMobile'
-import API from '../services/api'
+import API, { confirmAttendance } from '../services/api'
 
 // ============================================================
 // Constants
@@ -167,6 +167,12 @@ function AttendanceBadge({ status }) {
   return <span style={{ ...s.badge, backgroundColor: bg, color }}>{status}</span>
 }
 
+function ConfirmedBadge({ confirmed }) {
+  return confirmed
+    ? <span style={{ fontSize: '11px', backgroundColor: '#dcfce7', color: '#16a34a', padding: '2px 7px', borderRadius: '999px', fontWeight: '600', border: '1px solid #bbf7d0' }}>✓ confirmed</span>
+    : <span style={{ fontSize: '11px', backgroundColor: '#fef9c3', color: '#ca8a04', padding: '2px 7px', borderRadius: '999px', fontWeight: '600', border: '1px dashed #fde68a' }}>รอ confirm</span>
+}
+
 function CheckoutBadge({ checkoutTime }) {
   return checkoutTime
     ? <span style={{ ...s.badge, backgroundColor: '#dcfce7', color: '#16a34a' }}>Done</span>
@@ -224,6 +230,10 @@ export default function DashboardPage() {
   const [hoveredRow, setHoveredRow] = useState(null)
   const [showExportModal, setShowExportModal] = useState(false)
   const [exportRange, setExportRange] = useState({ date_from: '', date_to: '' })
+  const [confirmModal, setConfirmModal] = useState({ open: false, duty: null })
+  const [confirmStatus, setConfirmStatus] = useState('PRESENT')
+  const [confirmSaving, setConfirmSaving] = useState(false)
+  const [confirmError, setConfirmError] = useState('')
 
   // Active KPI filter: null | 'incidents' | 'issues' | 'pending'
   const [kpiFilter, setKpiFilter] = useState(null)
@@ -304,6 +314,32 @@ export default function DashboardPage() {
     kpiFilter !== null
 
   const handleLogout = () => { logout(); navigate('/login', { replace: true }) }
+
+  // Current user can confirm if admin OR has a สิบเวร duty on the displayed date
+  const canConfirm = user?.is_admin === 1 ||
+    duties.some(d => d.user_id === user?.id && d.role_name === 'สิบเวร')
+
+  const openConfirmModal = (duty, e) => {
+    e.stopPropagation()
+    setConfirmStatus(duty.attendance_status || 'PRESENT')
+    setConfirmError('')
+    setConfirmModal({ open: true, duty })
+  }
+
+  const handleConfirm = async () => {
+    if (!confirmModal.duty) return
+    setConfirmSaving(true)
+    setConfirmError('')
+    try {
+      await confirmAttendance(confirmModal.duty.duty_id, { attendance_status: confirmStatus })
+      setConfirmModal({ open: false, duty: null })
+      loadAll()
+    } catch (err) {
+      setConfirmError(err.response?.data?.detail || 'เกิดข้อผิดพลาด')
+    } finally {
+      setConfirmSaving(false)
+    }
+  }
 
   const openExportModal = () => {
     setExportRange({
@@ -584,21 +620,32 @@ export default function DashboardPage() {
                     <span>{duty.shift_name}</span>
                   </div>
                   {/* Times + status row */}
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '13px', color: '#374151' }}>เข้า: <strong>{formatTime(duty.checkin_time)}</strong></span>
                     <span style={{ fontSize: '13px', color: '#374151' }}>ออก: <strong>{formatTime(duty.checkout_time)}</strong></span>
                     <CheckoutBadge checkoutTime={duty.checkout_time} />
+                    <ConfirmedBadge confirmed={duty.attendance_confirmed} />
                     {duty.incident_count > 0 && (
                       <span style={{ fontSize: '12px', backgroundColor: '#fee2e2', color: '#dc2626', padding: '2px 8px', borderRadius: '999px', fontWeight: '600' }}>
-                        🚨 {duty.incident_count} incident
+                        🚨 {duty.incident_count}
                       </span>
                     )}
                     {duty.issue_count > 0 && (
                       <span style={{ fontSize: '12px', backgroundColor: '#ffedd5', color: '#c2410c', padding: '2px 8px', borderRadius: '999px', fontWeight: '600' }}>
-                        ⚠️ {duty.issue_count} issue
+                        ⚠️ {duty.issue_count}
                       </span>
                     )}
                   </div>
+                  {canConfirm && (
+                    <div style={{ marginTop: '10px' }}>
+                      <button
+                        style={{ fontSize: '13px', padding: '6px 18px', backgroundColor: '#1a73e8', color: '#fff', border: 'none', borderRadius: '7px', cursor: 'pointer', fontWeight: '600' }}
+                        onClick={(e) => openConfirmModal(duty, e)}
+                      >
+                        {duty.attendance_confirmed ? '✏️ แก้ไขสถานะ' : '✓ Confirm สถานะ'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -615,6 +662,7 @@ export default function DashboardPage() {
                     <th style={s.th}>เข้า</th>
                     <th style={s.th}>ออก</th>
                     <th style={s.th}>สถานะ</th>
+                    <th style={s.th}>Confirmed</th>
                     <th style={s.th} title="NOT OK checklist items">Issues</th>
                     <th style={s.th}>Incidents</th>
                     <th style={s.th}>Checkout</th>
@@ -640,6 +688,19 @@ export default function DashboardPage() {
                       <td style={{ ...s.td, fontVariantNumeric: 'tabular-nums' }}>{formatTime(duty.checkin_time)}</td>
                       <td style={{ ...s.td, fontVariantNumeric: 'tabular-nums' }}>{formatTime(duty.checkout_time)}</td>
                       <td style={s.td}><AttendanceBadge status={duty.attendance_status} /></td>
+                      <td style={s.td} onClick={(e) => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <ConfirmedBadge confirmed={duty.attendance_confirmed} />
+                          {canConfirm && (
+                            <button
+                              style={{ fontSize: '11px', padding: '3px 8px', backgroundColor: '#1a73e8', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: '600' }}
+                              onClick={(e) => openConfirmModal(duty, e)}
+                            >
+                              {duty.attendance_confirmed ? '✏️' : '✓'}
+                            </button>
+                          )}
+                        </div>
+                      </td>
                       <td style={s.td}>
                         <CountCircle value={duty.issue_count} warnBg="#ffedd5" warnColor="#c2410c" />
                       </td>
@@ -670,6 +731,79 @@ export default function DashboardPage() {
           <span>Click any row to open Duty Detail</span>
         </div>
       </div>
+
+      {/* ── Confirm Attendance Modal ── */}
+      {confirmModal.open && confirmModal.duty && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          padding: '16px',
+        }} onClick={() => setConfirmModal({ open: false, duty: null })}>
+          <div style={{
+            backgroundColor: '#fff', borderRadius: '14px', padding: '28px 24px', width: '100%', maxWidth: '380px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+          }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: '700', color: '#1a1a2e' }}>
+              Confirm สถานะการมาเวร
+            </h3>
+            <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#6b7280' }}>
+              {confirmModal.duty.full_name} — {confirmModal.duty.role_name} · {confirmModal.duty.shift_name}
+            </p>
+            <p style={{ margin: '0 0 4px', fontSize: '12px', color: '#9ca3af' }}>
+              เข้า: {formatTime(confirmModal.duty.checkin_time)}
+            </p>
+
+            <div style={{ marginBottom: '20px', marginTop: '16px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                สถานะการมาเวร
+              </label>
+              {[
+                { value: 'PRESENT', label: 'มาปกติ', color: '#16a34a', bg: '#dcfce7' },
+                { value: 'LATE',    label: 'มาสาย',  color: '#ca8a04', bg: '#fef9c3' },
+                { value: 'EXCUSED', label: 'ลา',     color: '#0369a1', bg: '#e0f2fe' },
+                { value: 'ABSENT',  label: 'ขาด',    color: '#dc2626', bg: '#fee2e2' },
+              ].map(opt => (
+                <label key={opt.value} style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 14px', borderRadius: '8px', marginBottom: '6px', cursor: 'pointer',
+                  backgroundColor: confirmStatus === opt.value ? opt.bg : '#f9fafb',
+                  border: `1.5px solid ${confirmStatus === opt.value ? opt.color : '#e5e7eb'}`,
+                }}>
+                  <input
+                    type="radio" name="confirmStatus" value={opt.value}
+                    checked={confirmStatus === opt.value}
+                    onChange={() => setConfirmStatus(opt.value)}
+                    style={{ accentColor: opt.color }}
+                  />
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: opt.color }}>{opt.label}</span>
+                </label>
+              ))}
+            </div>
+
+            {confirmError && (
+              <div style={{ fontSize: '13px', color: '#dc2626', backgroundColor: '#fee2e2', padding: '8px 12px', borderRadius: '6px', marginBottom: '14px' }}>
+                {confirmError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                style={{ padding: '9px 20px', fontSize: '13px', fontWeight: '600', backgroundColor: '#f3f4f6', border: '1.5px solid #d1d5db', color: '#374151', borderRadius: '8px', cursor: 'pointer' }}
+                onClick={() => setConfirmModal({ open: false, duty: null })}
+              >
+                ยกเลิก
+              </button>
+              <button
+                style={{ backgroundColor: '#1a73e8', color: '#fff', border: 'none', padding: '9px 24px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }}
+                onClick={handleConfirm}
+                disabled={confirmSaving}
+              >
+                {confirmSaving ? 'กำลังบันทึก...' : '✓ บันทึก'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Export Modal ── */}
       {showExportModal && (

@@ -24,7 +24,7 @@ class User(Base):
 
     # Relationships
     user_roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
-    duties = relationship("Duty", back_populates="user")
+    duties = relationship("Duty", back_populates="user", foreign_keys="Duty.user_id")
 
     @property
     def roles(self):
@@ -87,11 +87,15 @@ class Duty(Base):
     checkin_time = Column(DateTime, nullable=True)
     checkout_time = Column(DateTime, nullable=True)
     attendance_status = Column(String(20), default="PRESENT", nullable=False)
+    attendance_confirmed = Column(Boolean, default=False, nullable=False)
+    attendance_confirmed_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    attendance_confirmed_at = Column(DateTime, nullable=True)
     notes = Column(String(1000), nullable=True)
     created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
 
     # Relationships
-    user = relationship("User", back_populates="duties")
+    user = relationship("User", back_populates="duties", foreign_keys=[user_id])
+    confirmed_by_user = relationship("User", foreign_keys=[attendance_confirmed_by])
     role = relationship("Role", back_populates="duties")
     shift = relationship("DutyShift", back_populates="duties")
     checklist_logs = relationship("ChecklistLog", back_populates="duty", cascade="all, delete-orphan")

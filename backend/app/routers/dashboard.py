@@ -146,6 +146,7 @@ def get_dashboard_duties(
         incident_count = len(duty.incidents)
         result.append({
             "duty_id": duty.id,
+            "user_id": duty.user_id,
             "duty_date": str(duty.duty_date),
             "employee_code": duty.user.employee_code,
             "full_name": duty.user.full_name,
@@ -154,6 +155,8 @@ def get_dashboard_duties(
             "checkin_time": duty.checkin_time.isoformat() if duty.checkin_time else None,
             "checkout_time": duty.checkout_time.isoformat() if duty.checkout_time else None,
             "attendance_status": duty.attendance_status,
+            "attendance_confirmed": bool(duty.attendance_confirmed),
+            "attendance_confirmed_at": duty.attendance_confirmed_at.isoformat() if duty.attendance_confirmed_at else None,
             "issue_count": issue_count,
             "incident_count": incident_count,
         })
