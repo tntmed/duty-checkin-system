@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useIsMobile } from '../hooks/useIsMobile'
 import API from '../services/api'
 
 // ============================================================
@@ -21,11 +22,11 @@ const ATTENDANCE_OPTIONS = [
 // ============================================================
 const s = {
   page: { minHeight: '100vh', backgroundColor: '#f0f2f5', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" },
-  navbar: {
-    backgroundColor: '#1a73e8', padding: '0 24px', height: '60px',
+  navbar: (isMobile) => ({
+    backgroundColor: '#1a73e8', padding: isMobile ? '0 14px' : '0 24px', height: '56px',
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     boxShadow: '0 2px 8px rgba(0,0,0,0.15)', position: 'sticky', top: 0, zIndex: 100,
-  },
+  }),
   navLeft: { display: 'flex', alignItems: 'center', gap: '14px' },
   navTitle: { color: '#fff', fontWeight: '700', fontSize: '18px', margin: 0, cursor: 'pointer' },
   navTag: {
@@ -38,9 +39,9 @@ const s = {
     color: '#fff', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '500',
   },
 
-  content: { maxWidth: '1280px', margin: '24px auto', padding: '0 20px' },
+  content: (isMobile) => ({ maxWidth: '1280px', margin: isMobile ? '14px auto' : '24px auto', padding: isMobile ? '0 12px' : '0 20px' }),
 
-  topBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', gap: '16px', flexWrap: 'wrap' },
+  topBar: (isMobile) => ({ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', gap: '10px', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' }),
   pageTitle: { fontSize: '20px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 4px' },
   dateMeta: { fontSize: '13px', color: '#6b7280' },
   topBarRight: { display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' },
@@ -56,38 +57,39 @@ const s = {
   },
 
   // KPI
-  kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '20px' },
-  kpiCard: (active, borderColor) => ({
-    backgroundColor: '#fff', borderRadius: '12px', padding: '18px 22px',
+  kpiGrid: (isMobile) => ({ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }),
+  kpiCard: (active, borderColor, isMobile) => ({
+    backgroundColor: '#fff', borderRadius: '10px', padding: isMobile ? '14px 16px' : '18px 22px',
     boxShadow: active ? `0 0 0 3px ${borderColor}60, 0 4px 16px rgba(0,0,0,0.1)` : '0 2px 10px rgba(0,0,0,0.07)',
     borderLeft: `4px solid ${borderColor}`,
     cursor: 'pointer', transition: 'box-shadow 0.15s, transform 0.1s',
     transform: active ? 'translateY(-2px)' : 'none',
     userSelect: 'none',
   }),
-  kpiTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' },
-  kpiLabel: { fontSize: '13px', color: '#6b7280', fontWeight: '500' },
-  kpiIcon: { fontSize: '22px', opacity: 0.18 },
-  kpiValue: (color) => ({ fontSize: '38px', fontWeight: '800', color, lineHeight: 1 }),
+  kpiTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' },
+  kpiLabel: (isMobile) => ({ fontSize: isMobile ? '12px' : '13px', color: '#6b7280', fontWeight: '500' }),
+  kpiIcon: { fontSize: '20px', opacity: 0.18 },
+  kpiValue: (color, isMobile) => ({ fontSize: isMobile ? '30px' : '38px', fontWeight: '800', color, lineHeight: 1 }),
   kpiHint: { fontSize: '11px', color: '#9ca3af', marginTop: '4px' },
 
   // Filter bar
-  filterBar: {
-    backgroundColor: '#fff', borderRadius: '10px', padding: '14px 20px',
+  filterBar: (isMobile) => ({
+    backgroundColor: '#fff', borderRadius: '10px', padding: isMobile ? '12px 14px' : '14px 20px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.07)', marginBottom: '20px',
-    display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap',
-  },
+    display: 'flex', gap: '10px', alignItems: isMobile ? 'stretch' : 'center',
+    flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row',
+  }),
   filterLabel: { fontSize: '13px', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' },
-  filterSelect: {
-    padding: '7px 12px', fontSize: '13px', border: '1.5px solid #d1d5db',
+  filterSelect: (isMobile) => ({
+    padding: '8px 12px', fontSize: '14px', border: '1.5px solid #d1d5db',
     borderRadius: '7px', outline: 'none', backgroundColor: '#fff', color: '#111827',
-    cursor: 'pointer', minWidth: '140px',
-  },
-  filterInput: {
-    padding: '7px 12px', fontSize: '13px', border: '1.5px solid #d1d5db',
+    cursor: 'pointer', width: isMobile ? '100%' : undefined, minWidth: isMobile ? undefined : '140px',
+  }),
+  filterInput: (isMobile) => ({
+    padding: '8px 12px', fontSize: '14px', border: '1.5px solid #d1d5db',
     borderRadius: '7px', outline: 'none', backgroundColor: '#fff', color: '#111827',
-    width: '140px',
-  },
+    width: isMobile ? '100%' : '140px', boxSizing: 'border-box',
+  }),
   resetBtn: {
     padding: '7px 16px', fontSize: '13px', fontWeight: '600',
     backgroundColor: '#f3f4f6', border: '1.5px solid #d1d5db', color: '#374151',
@@ -176,15 +178,15 @@ function CountCircle({ value, warnBg, warnColor }) {
   return <span style={s.countCircle(warnBg, warnColor)}>{value}</span>
 }
 
-function KpiCard({ label, value, icon, hint, borderColor, valueColor, active, onClick }) {
+function KpiCard({ label, value, icon, hint, borderColor, valueColor, active, onClick, isMobile }) {
   return (
-    <div style={s.kpiCard(active, borderColor)} onClick={onClick}>
+    <div style={s.kpiCard(active, borderColor, isMobile)} onClick={onClick}>
       <div style={s.kpiTop}>
-        <span style={s.kpiLabel}>{label}</span>
+        <span style={s.kpiLabel(isMobile)}>{label}</span>
         <span style={s.kpiIcon}>{icon}</span>
       </div>
-      <div style={s.kpiValue(valueColor || '#111827')}>{value}</div>
-      <div style={s.kpiHint}>{active ? '✕ click to clear filter' : hint}</div>
+      <div style={s.kpiValue(valueColor || '#111827', isMobile)}>{value}</div>
+      <div style={s.kpiHint}>{active ? '✕ ล้าง filter' : hint}</div>
     </div>
   )
 }
@@ -210,6 +212,7 @@ function rowBg(duty, hovered) {
 export default function DashboardPage() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const isMobile = useIsMobile()
 
   const [summary, setSummary] = useState(null)
   const [duties, setDuties] = useState([])
@@ -339,7 +342,7 @@ export default function DashboardPage() {
 
   if (loading && !summary) return (
     <div style={s.page}>
-      <nav style={s.navbar}>
+      <nav style={s.navbar(isMobile)}>
         <div style={s.navLeft}>
           <h1 style={s.navTitle}>ระบบลงเวร ศูนย์สารสนเทศ</h1>
           <span style={s.navTag}>Dashboard</span>
@@ -352,22 +355,24 @@ export default function DashboardPage() {
   return (
     <div style={s.page}>
       {/* ── Navbar ── */}
-      <nav style={s.navbar}>
+      <nav style={s.navbar(isMobile)}>
         <div style={s.navLeft}>
-          <h1 style={s.navTitle} onClick={() => navigate('/checkin')}>ระบบลงเวร ศูนย์สารสนเทศ</h1>
+          <h1 style={{ ...s.navTitle, fontSize: isMobile ? '15px' : '18px' }} onClick={() => navigate('/checkin')}>
+            {isMobile ? 'ระบบลงเวร' : 'ระบบลงเวร ศูนย์สารสนเทศ'}
+          </h1>
           <span style={s.navTag}>Dashboard</span>
         </div>
         <div style={s.navRight}>
-          <span style={{ fontSize: '13px', opacity: 0.8 }}>{user?.full_name}</span>
-          <button style={s.navBtn} onClick={() => navigate('/checkin')}>← Check-in</button>
-          <button style={{ ...s.navBtn, borderColor: 'rgba(220,38,38,0.5)' }} onClick={handleLogout}>Logout</button>
+          {!isMobile && <span style={{ fontSize: '13px', opacity: 0.8 }}>{user?.full_name}</span>}
+          <button style={s.navBtn} onClick={() => navigate('/checkin')}>{isMobile ? '← เวร' : '← Check-in'}</button>
+          <button style={{ ...s.navBtn, borderColor: 'rgba(220,38,38,0.5)' }} onClick={handleLogout}>ออก</button>
         </div>
       </nav>
 
-      <div style={s.content}>
+      <div style={s.content(isMobile)}>
 
         {/* ── Top bar ── */}
-        <div style={s.topBar}>
+        <div style={s.topBar(isMobile)}>
           <div>
             <h2 style={s.pageTitle}>Operations Dashboard</h2>
             <div style={s.dateMeta}>
@@ -381,17 +386,17 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-          <div style={s.topBarRight}>
-            <span style={s.autoTag}>⟳ Auto-refresh 30s</span>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {!isMobile && <span style={s.autoTag}>⟳ Auto 30s</span>}
             <button style={s.refreshBtn} onClick={loadAll} disabled={loading}>
-              {loading ? '...' : '↻ Refresh'}
+              {loading ? '...' : '↻'}
             </button>
             <button
               style={{ ...s.refreshBtn, backgroundColor: '#16a34a', color: '#fff', border: '1.5px solid #15803d' }}
               onClick={openExportModal}
               title="Export as Excel"
             >
-              ↓ Export Excel
+              ↓ Excel
             </button>
           </div>
         </div>
@@ -400,42 +405,42 @@ export default function DashboardPage() {
 
         {/* ── KPI Cards (clickable) ── */}
         {summary && (
-          <div style={s.kpiGrid}>
-            <KpiCard
-              label="Total Duties"
+          <div style={s.kpiGrid(isMobile)}>
+            <KpiCard isMobile={isMobile}
+              label="เวรทั้งหมด"
               value={summary.total_duties}
               icon="📋"
-              hint="Click to show all duties"
+              hint="แตะเพื่อดูทั้งหมด"
               borderColor="#1a73e8"
               valueColor="#1a73e8"
               active={false}
               onClick={() => { setKpiFilter(null); setFilters(f => ({ ...f })) }}
             />
-            <KpiCard
-              label="Open Incidents"
+            <KpiCard isMobile={isMobile}
+              label="Incident เปิด"
               value={summary.open_incidents}
               icon="🚨"
-              hint="Click to filter duties with incidents"
+              hint="แตะเพื่อกรอง"
               borderColor={summary.open_incidents > 0 ? '#dc2626' : '#16a34a'}
               valueColor={summary.open_incidents > 0 ? '#dc2626' : '#16a34a'}
               active={kpiFilter === 'incidents'}
               onClick={() => handleKpiClick('incidents')}
             />
-            <KpiCard
+            <KpiCard isMobile={isMobile}
               label="Checklist Issues"
               value={summary.checklist_issues}
               icon="⚠️"
-              hint="Click to filter duties with NOT OK items"
+              hint="แตะเพื่อกรอง"
               borderColor={summary.checklist_issues > 0 ? '#ea580c' : '#16a34a'}
               valueColor={summary.checklist_issues > 0 ? '#ea580c' : '#16a34a'}
               active={kpiFilter === 'issues'}
               onClick={() => handleKpiClick('issues')}
             />
-            <KpiCard
-              label="Pending Checkout"
+            <KpiCard isMobile={isMobile}
+              label="รอ Check-out"
               value={summary.pending_checkout}
               icon="⏳"
-              hint="Click to filter duties not yet checked out"
+              hint="แตะเพื่อกรอง"
               borderColor={summary.pending_checkout > 0 ? '#ca8a04' : '#16a34a'}
               valueColor={summary.pending_checkout > 0 ? '#ca8a04' : '#6b7280'}
               active={kpiFilter === 'pending'}
@@ -471,36 +476,41 @@ export default function DashboardPage() {
         )}
 
         {/* ── Filter bar ── */}
-        <div style={s.filterBar}>
-          <span style={s.filterLabel}>Filter:</span>
+        <div style={s.filterBar(isMobile)}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={s.filterLabel}>Filter:</span>
+            <span style={{ fontSize: '13px', color: '#9ca3af' }}>
+              {duties.length} รายการ
+            </span>
+          </div>
 
           <input
             type="date"
-            style={s.filterInput}
+            style={s.filterInput(isMobile)}
             value={filters.duty_date}
             onChange={(e) => handleFilterChange('duty_date', e.target.value)}
           />
 
           <select
-            style={s.filterSelect}
+            style={s.filterSelect(isMobile)}
             value={filters.role_id}
             onChange={(e) => handleFilterChange('role_id', e.target.value)}
           >
-            <option value="">All Roles</option>
+            <option value="">ทุกตำแหน่ง</option>
             {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
 
           <select
-            style={s.filterSelect}
+            style={s.filterSelect(isMobile)}
             value={filters.shift_id}
             onChange={(e) => handleFilterChange('shift_id', e.target.value)}
           >
-            <option value="">All Shifts</option>
+            <option value="">ทุกเวร</option>
             {shifts.map((sh) => <option key={sh.id} value={sh.id}>{sh.name}</option>)}
           </select>
 
           <select
-            style={s.filterSelect}
+            style={s.filterSelect(isMobile)}
             value={filters.attendance_status}
             onChange={(e) => handleFilterChange('attendance_status', e.target.value)}
           >
@@ -517,12 +527,8 @@ export default function DashboardPage() {
           )}
 
           {hasActiveFilter && (
-            <button style={s.resetBtn} onClick={handleReset}>✕ Reset</button>
+            <button style={{ ...s.resetBtn, width: isMobile ? '100%' : undefined }} onClick={handleReset}>✕ รีเซ็ต</button>
           )}
-
-          <span style={{ marginLeft: 'auto', fontSize: '13px', color: '#9ca3af' }}>
-            {duties.length} result{duties.length !== 1 ? 's' : ''}
-          </span>
         </div>
 
         {/* ── Duties Table ── */}
@@ -547,24 +553,72 @@ export default function DashboardPage() {
 
           {duties.length === 0 ? (
             <div style={s.emptyRow}>
-              {hasActiveFilter ? 'No duties match the current filters.' : 'No duties recorded for this date.'}
+              {hasActiveFilter ? 'ไม่พบข้อมูลตามที่กรอง' : 'ยังไม่มีการลงเวรในวันนี้'}
+            </div>
+          ) : isMobile ? (
+            /* ── Mobile card list ── */
+            <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {duties.map((duty) => (
+                <div
+                  key={duty.duty_id}
+                  style={{
+                    backgroundColor: duty.incident_count > 0 ? '#fff5f5' : duty.issue_count > 0 ? '#fffbf0' : '#fff',
+                    border: '1.5px solid',
+                    borderColor: duty.incident_count > 0 ? '#fecaca' : duty.issue_count > 0 ? '#fed7aa' : '#e5e7eb',
+                    borderRadius: '10px', padding: '14px', cursor: 'pointer',
+                  }}
+                  onClick={() => navigate(`/duty/${duty.duty_id}`)}
+                >
+                  {/* Top row: name + badges */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div>
+                      <div style={{ fontWeight: '700', fontSize: '15px', color: '#111827' }}>{duty.full_name}</div>
+                      <div style={{ fontSize: '12px', color: '#9ca3af' }}>{duty.employee_code} · #{duty.duty_id}</div>
+                    </div>
+                    <AttendanceBadge status={duty.attendance_status} />
+                  </div>
+                  {/* Role + Shift */}
+                  <div style={{ fontSize: '13px', color: '#374151', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: '600' }}>{duty.role_name}</span>
+                    <span style={{ color: '#9ca3af', margin: '0 6px' }}>·</span>
+                    <span>{duty.shift_name}</span>
+                  </div>
+                  {/* Times + status row */}
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '13px', color: '#374151' }}>เข้า: <strong>{formatTime(duty.checkin_time)}</strong></span>
+                    <span style={{ fontSize: '13px', color: '#374151' }}>ออก: <strong>{formatTime(duty.checkout_time)}</strong></span>
+                    <CheckoutBadge checkoutTime={duty.checkout_time} />
+                    {duty.incident_count > 0 && (
+                      <span style={{ fontSize: '12px', backgroundColor: '#fee2e2', color: '#dc2626', padding: '2px 8px', borderRadius: '999px', fontWeight: '600' }}>
+                        🚨 {duty.incident_count} incident
+                      </span>
+                    )}
+                    {duty.issue_count > 0 && (
+                      <span style={{ fontSize: '12px', backgroundColor: '#ffedd5', color: '#c2410c', padding: '2px 8px', borderRadius: '999px', fontWeight: '600' }}>
+                        ⚠️ {duty.issue_count} issue
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
+            /* ── Desktop table ── */
             <div style={{ overflowX: 'auto' }}>
               <table style={s.table}>
                 <thead>
                   <tr>
                     <th style={s.th}>#</th>
-                    <th style={s.th}>Employee</th>
-                    <th style={s.th}>Role</th>
-                    <th style={s.th}>Shift</th>
-                    <th style={s.th}>Check-in</th>
-                    <th style={s.th}>Check-out</th>
-                    <th style={s.th}>Attendance</th>
+                    <th style={s.th}>ชื่อ</th>
+                    <th style={s.th}>ตำแหน่ง</th>
+                    <th style={s.th}>เวร</th>
+                    <th style={s.th}>เข้า</th>
+                    <th style={s.th}>ออก</th>
+                    <th style={s.th}>สถานะ</th>
                     <th style={s.th} title="NOT OK checklist items">Issues</th>
                     <th style={s.th}>Incidents</th>
                     <th style={s.th}>Checkout</th>
-                    <th style={s.th}>Action</th>
+                    <th style={s.th}>ดู</th>
                   </tr>
                 </thead>
                 <tbody>
