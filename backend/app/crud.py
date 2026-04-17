@@ -182,7 +182,6 @@ def create_duty(db: Session, user_id: int, checkin_req: schemas.CheckinRequest) 
         raise ValueError(f"You have already checked in for this role and shift today (Duty #{existing.id}).")
 
     shift = db.query(models.DutyShift).filter(models.DutyShift.id == checkin_req.shift_id).first()
-    auto_checkout = _calc_checkout_time(today, shift) if shift else None
 
     duty = models.Duty(
         user_id=user_id,
@@ -190,7 +189,7 @@ def create_duty(db: Session, user_id: int, checkin_req: schemas.CheckinRequest) 
         shift_id=checkin_req.shift_id,
         duty_date=today,
         checkin_time=now,
-        checkout_time=auto_checkout,
+        checkout_time=None,
         attendance_status="PRESENT",
         notes=checkin_req.notes,
     )
@@ -248,8 +247,15 @@ def get_duties_today(db: Session, user_id: int) -> List[models.Duty]:
 
 
 def get_duty(db: Session, duty_id: int) -> Optional[models.Duty]:
-    """Fetch a duty by primary key with all related data."""
-    return db.query(models.Duty).filter(models.Duty.id == duty_id).first()
+    """Fetch a duty by primary key. Auto-checkout if shift end time has passed."""
+    duty = db.query(models.Duty).filter(models.Duty.id == duty_id).first()
+    if duty and duty.checkout_time is None and duty.shift:
+        expected_checkout = _calc_checkout_time(duty.duty_date, duty.shift)
+        if _now() >= expected_checkout:
+            duty.checkout_time = expected_checkout
+            db.commit()
+            db.refresh(duty)
+    return duty
 
 
 # ============================================================
