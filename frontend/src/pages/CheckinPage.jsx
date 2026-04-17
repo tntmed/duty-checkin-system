@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getRoles, getShifts, getDutiesToday, checkin } from '../services/api'
+import { useIsMobile } from '../hooks/useIsMobile'
 
-// mapping: role name → shift names ที่อนุญาต
 const ROLE_SHIFT_MAP = {
   'สิบเวร':         ['เวรวันราชการ', 'วันหยุด'],
   'ผู้ช่วยสิบเวร':  ['เวรวันราชการ', 'วันหยุด'],
@@ -23,188 +23,34 @@ const SHIFT_COLORS = {
   'วันหยุด รอบค่ำ':         { bg: '#fce7f3', border: '#db2777', text: '#831843' },
 }
 
-const styles = {
-  page: {
-    minHeight: '100vh',
-    backgroundColor: '#f0f2f5',
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-  },
-  navbar: {
-    backgroundColor: '#1a73e8',
-    padding: '0 24px',
-    height: '60px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-  },
-  navTitle: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: '18px',
-    margin: 0,
-  },
-  navUser: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    color: '#ffffff',
-    fontSize: '14px',
-  },
-  logoutBtn: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    border: '1px solid rgba(255,255,255,0.4)',
-    color: '#ffffff',
-    padding: '6px 16px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '500',
-    transition: 'background-color 0.2s',
-  },
-  content: {
-    maxWidth: '900px',
-    margin: '32px auto',
-    padding: '0 16px',
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    padding: '28px',
-    marginBottom: '24px',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-  },
-  cardTitle: {
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#1a1a2e',
-    marginTop: 0,
-    marginBottom: '20px',
-    paddingBottom: '12px',
-    borderBottom: '2px solid #e5e7eb',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    fontSize: '14px',
-  },
-  th: {
-    textAlign: 'left',
-    padding: '10px 12px',
-    backgroundColor: '#f8fafc',
-    color: '#6b7280',
-    fontWeight: '600',
-    fontSize: '12px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    borderBottom: '1px solid #e5e7eb',
-  },
-  td: {
-    padding: '12px',
-    color: '#374151',
-    borderBottom: '1px solid #f3f4f6',
-    verticalAlign: 'middle',
-  },
-  viewBtn: {
-    backgroundColor: '#1a73e8',
-    color: '#ffffff',
-    border: 'none',
-    padding: '6px 14px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '13px',
-    fontWeight: '500',
-  },
-  emptyRow: {
-    textAlign: 'center',
-    padding: '24px',
-    color: '#9ca3af',
-    fontStyle: 'italic',
-  },
-  formRow: {
-    display: 'flex',
-    gap: '16px',
-    alignItems: 'flex-end',
-    flexWrap: 'wrap',
-  },
-  formGroup: {
-    flex: '1',
-    minWidth: '180px',
-  },
-  label: {
-    display: 'block',
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: '6px',
-  },
-  select: {
-    width: '100%',
-    padding: '9px 12px',
-    fontSize: '14px',
-    border: '1.5px solid #d1d5db',
-    borderRadius: '8px',
-    outline: 'none',
-    backgroundColor: '#ffffff',
-    color: '#111827',
-    cursor: 'pointer',
-    boxSizing: 'border-box',
-  },
-  checkinBtn: {
-    backgroundColor: '#16a34a',
-    color: '#ffffff',
-    border: 'none',
-    padding: '10px 28px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600',
-    whiteSpace: 'nowrap',
-    transition: 'background-color 0.2s',
-  },
-  checkinBtnDisabled: {
-    backgroundColor: '#86efac',
-    cursor: 'not-allowed',
-  },
-  badge: {
-    display: 'inline-block',
-    padding: '3px 10px',
-    borderRadius: '999px',
-    fontSize: '12px',
-    fontWeight: '600',
-  },
-  error: {
-    backgroundColor: '#fee2e2',
-    color: '#dc2626',
-    padding: '10px 14px',
-    borderRadius: '8px',
-    fontSize: '14px',
-    marginBottom: '16px',
-    border: '1px solid #fecaca',
-  },
-  loadingText: {
-    textAlign: 'center',
-    padding: '40px',
-    color: '#6b7280',
-  },
+const STATUS_TH = {
+  PRESENT: { label: 'มาปฏิบัติงาน', bg: '#dcfce7', color: '#16a34a' },
+  LATE:    { label: 'มาสาย',        bg: '#fef9c3', color: '#ca8a04' },
+  ABSENT:  { label: 'ขาดงาน',       bg: '#fee2e2', color: '#dc2626' },
+  EXCUSED: { label: 'ลา',           bg: '#e0f2fe', color: '#0369a1' },
 }
 
 function formatDateTime(dt) {
   if (!dt) return '-'
-  return new Date(dt).toLocaleString()
+  return new Date(dt).toLocaleString('th-TH', {
+    month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+
+function formatDate(dt) {
+  if (!dt) return '-'
+  return new Date(dt).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' })
 }
 
 function StatusBadge({ status }) {
-  const colorMap = {
-    PRESENT: { bg: '#dcfce7', color: '#16a34a' },
-    LATE: { bg: '#fef9c3', color: '#ca8a04' },
-    ABSENT: { bg: '#fee2e2', color: '#dc2626' },
-    EXCUSED: { bg: '#e0f2fe', color: '#0369a1' },
-  }
-  const c = colorMap[status] || { bg: '#f3f4f6', color: '#6b7280' }
+  const c = STATUS_TH[status] || { label: status, bg: '#f3f4f6', color: '#6b7280' }
   return (
-    <span style={{ ...styles.badge, backgroundColor: c.bg, color: c.color }}>
-      {status}
+    <span style={{
+      display: 'inline-block', padding: '3px 10px', borderRadius: '999px',
+      fontSize: '12px', fontWeight: '600', backgroundColor: c.bg, color: c.color,
+    }}>
+      {c.label}
     </span>
   )
 }
@@ -212,6 +58,7 @@ function StatusBadge({ status }) {
 export default function CheckinPage() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const isMobile = useIsMobile()
 
   const [roles, setRoles] = useState([])
   const [shifts, setShifts] = useState([])
@@ -222,34 +69,27 @@ export default function CheckinPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  useEffect(() => { loadData() }, [])
 
   async function loadData() {
     setLoading(true)
     setError('')
     try {
       const [rolesRes, shiftsRes, dutiesRes] = await Promise.all([
-        getRoles(),
-        getShifts(),
-        getDutiesToday(),
+        getRoles(), getShifts(), getDutiesToday(),
       ])
       const rolesData = rolesRes.data || []
       const shiftsData = shiftsRes.data || []
-      const dutiesData = dutiesRes.data || []
-
       setRoles(rolesData)
       setShifts(shiftsData)
-      setActiveDuties(dutiesData)
-
+      setActiveDuties(dutiesRes.data || [])
       if (rolesData.length > 0) {
         setSelectedRole(String(rolesData[0].id))
         const allowed = ROLE_SHIFT_MAP[rolesData[0].name] || []
         const filtered = shiftsData.filter(s => allowed.includes(s.name))
         if (filtered.length > 0) setSelectedShift(String(filtered[0].id))
       }
-    } catch (err) {
+    } catch {
       setError('Failed to load data. Please refresh the page.')
     } finally {
       setLoading(false)
@@ -258,219 +98,256 @@ export default function CheckinPage() {
 
   const handleCheckin = async (e) => {
     e.preventDefault()
-    if (!selectedRole || !selectedShift) {
-      setError('Please select both a role and shift.')
-      return
-    }
-
+    if (!selectedRole || !selectedShift) { setError('Please select both a role and shift.'); return }
     setSubmitting(true)
     setError('')
     try {
-      const res = await checkin({
-        role_id: parseInt(selectedRole),
-        shift_id: parseInt(selectedShift),
-      })
+      const res = await checkin({ role_id: parseInt(selectedRole), shift_id: parseInt(selectedShift) })
       navigate(`/duty/${res.data.id}`)
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Check-in failed. Please try again.'
-      setError(msg)
+      setError(err.response?.data?.detail || 'Check-in failed. Please try again.')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login', { replace: true })
+  const handleLogout = () => { logout(); navigate('/login', { replace: true }) }
+
+  // ── Styles ─────────────────────────────────────────
+  const s = {
+    page: { minHeight: '100vh', backgroundColor: '#f0f2f5', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" },
+    navbar: {
+      backgroundColor: '#1a73e8', padding: isMobile ? '0 16px' : '0 24px',
+      height: isMobile ? '56px' : '60px',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.15)', position: 'sticky', top: 0, zIndex: 100,
+    },
+    navTitle: {
+      color: '#fff', fontWeight: '700',
+      fontSize: isMobile ? '15px' : '18px', margin: 0,
+      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+      maxWidth: isMobile ? '160px' : 'none',
+    },
+    navRight: { display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px' },
+    navName: { color: 'rgba(255,255,255,0.9)', fontSize: '13px', display: isMobile ? 'none' : 'block' },
+    navBtn: {
+      backgroundColor: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)',
+      color: '#fff', padding: isMobile ? '5px 10px' : '6px 14px',
+      borderRadius: '6px', cursor: 'pointer', fontSize: isMobile ? '13px' : '14px', fontWeight: '500',
+    },
+    content: { maxWidth: '900px', margin: isMobile ? '16px auto' : '32px auto', padding: '0 12px' },
+    card: {
+      backgroundColor: '#fff', borderRadius: '12px',
+      padding: isMobile ? '16px' : '28px', marginBottom: '16px',
+      boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+    },
+    cardTitle: {
+      fontSize: isMobile ? '16px' : '18px', fontWeight: '700', color: '#1a1a2e',
+      marginTop: 0, marginBottom: '16px', paddingBottom: '12px', borderBottom: '2px solid #e5e7eb',
+    },
+    error: {
+      backgroundColor: '#fee2e2', color: '#dc2626', padding: '10px 14px',
+      borderRadius: '8px', fontSize: '14px', marginBottom: '16px', border: '1px solid #fecaca',
+    },
   }
 
-  if (loading) {
-    return (
-      <div style={styles.page}>
-        <nav style={styles.navbar}>
-          <h1 style={styles.navTitle}>ระบบลงเวร ศูนย์สารสนเทศ</h1>
-        </nav>
-        <div style={styles.loadingText}>Loading...</div>
+  if (loading) return (
+    <div style={s.page}>
+      <nav style={s.navbar}><h1 style={s.navTitle}>ระบบลงเวร ศูนย์สารสนเทศ</h1></nav>
+      <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>Loading...</div>
+    </div>
+  )
+
+  // ── Duty card for mobile ────────────────────────────
+  const DutyCard = ({ duty }) => (
+    <div style={{
+      border: '1px solid #e5e7eb', borderRadius: '10px', padding: '14px',
+      marginBottom: '10px', backgroundColor: '#fafafa',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+        <div>
+          <div style={{ fontWeight: '700', fontSize: '15px', color: '#111827' }}>
+            {duty.role?.name || '-'}
+          </div>
+          <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '2px' }}>
+            {duty.shift ? `${duty.shift.name.replace(/^เวรนอกเวลา\s*/, '')} (${duty.shift.start_time}-${duty.shift.end_time})` : '-'}
+          </div>
+        </div>
+        <StatusBadge status={duty.attendance_status} />
       </div>
-    )
-  }
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '13px', color: '#374151', marginBottom: '10px' }}>
+        <div><span style={{ color: '#9ca3af' }}>เข้า: </span>{formatDateTime(duty.checkin_time)}</div>
+        <div><span style={{ color: '#9ca3af' }}>ออก: </span>{formatDateTime(duty.checkout_time)}</div>
+      </div>
+      <button
+        style={{
+          width: '100%', padding: '8px', borderRadius: '8px', border: 'none',
+          backgroundColor: '#1a73e8', color: '#fff', fontSize: '14px',
+          fontWeight: '600', cursor: 'pointer',
+        }}
+        onClick={() => navigate(`/duty/${duty.id}`)}
+      >
+        ดูรายละเอียด →
+      </button>
+    </div>
+  )
+
+  // ── Desktop table ───────────────────────────────────
+  const DutyTable = () => (
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+      <thead>
+        <tr>
+          {['วันที่', 'ตำแหน่ง', 'เวร', 'เข้างาน', 'ออกงาน', 'สถานะ', ''].map(h => (
+            <th key={h} style={{
+              textAlign: 'left', padding: '10px 12px', backgroundColor: '#f8fafc',
+              color: '#6b7280', fontWeight: '600', fontSize: '12px',
+              textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb',
+            }}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {activeDuties.length === 0 ? (
+          <tr><td colSpan={7} style={{ textAlign: 'center', padding: '24px', color: '#9ca3af', fontStyle: 'italic' }}>
+            No duties recorded today.
+          </td></tr>
+        ) : activeDuties.map((duty) => (
+          <tr key={duty.id}>
+            <td style={{ padding: '12px', color: '#374151', borderBottom: '1px solid #f3f4f6' }}>
+              {formatDate(duty.duty_date)}
+            </td>
+            <td style={{ padding: '12px', color: '#374151', borderBottom: '1px solid #f3f4f6' }}>{duty.role?.name || '-'}</td>
+            <td style={{ padding: '12px', color: '#374151', borderBottom: '1px solid #f3f4f6' }}>
+              {duty.shift ? `${duty.shift.name} (${duty.shift.start_time}-${duty.shift.end_time})` : '-'}
+            </td>
+            <td style={{ padding: '12px', color: '#374151', borderBottom: '1px solid #f3f4f6' }}>{formatDateTime(duty.checkin_time)}</td>
+            <td style={{ padding: '12px', color: '#374151', borderBottom: '1px solid #f3f4f6' }}>{formatDateTime(duty.checkout_time)}</td>
+            <td style={{ padding: '12px', borderBottom: '1px solid #f3f4f6' }}><StatusBadge status={duty.attendance_status} /></td>
+            <td style={{ padding: '12px', borderBottom: '1px solid #f3f4f6' }}>
+              <button
+                style={{ backgroundColor: '#1a73e8', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}
+                onClick={() => navigate(`/duty/${duty.id}`)}
+              >View</button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+
+  // ── Shift picker ────────────────────────────────────
+  const roleName = roles.find(r => String(r.id) === selectedRole)?.name || ''
+  const allowed = ROLE_SHIFT_MAP[roleName] || []
+  const filteredShifts = shifts.filter(s => allowed.includes(s.name))
 
   return (
-    <div style={styles.page}>
-      <nav style={styles.navbar}>
-        <h1 style={styles.navTitle}>ระบบลงเวร ศูนย์สารสนเทศ</h1>
-        <div style={styles.navUser}>
-          <span>{user?.full_name || user?.employee_code}</span>
-          <button
-            style={{ ...styles.logoutBtn, backgroundColor: 'rgba(255,255,255,0.2)' }}
-            onClick={() => navigate('/dashboard')}
-          >
-            Dashboard
-          </button>
-          <button
-            style={styles.logoutBtn}
-            onClick={handleLogout}
-            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)')}
-            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)')}
-          >
-            Logout
-          </button>
+    <div style={s.page}>
+      <nav style={s.navbar}>
+        <h1 style={s.navTitle}>ระบบลงเวร ศูนย์สารสนเทศ</h1>
+        <div style={s.navRight}>
+          <span style={s.navName}>{user?.full_name || user?.employee_code}</span>
+          <button style={s.navBtn} onClick={() => navigate('/dashboard')}>Dashboard</button>
+          <button style={s.navBtn} onClick={handleLogout}>Logout</button>
         </div>
       </nav>
 
-      <div style={styles.content}>
-        {error && <div style={styles.error}>{error}</div>}
+      <div style={s.content}>
+        {error && <div style={s.error}>{error}</div>}
 
-        {/* Today's Duties Table */}
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Today's Duties</h2>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Date</th>
-                <th style={styles.th}>Role</th>
-                <th style={styles.th}>Shift</th>
-                <th style={styles.th}>Check-in Time</th>
-                <th style={styles.th}>Check-out Time</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activeDuties.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={styles.emptyRow}>
-                    No duties recorded today.
-                  </td>
-                </tr>
-              ) : (
-                activeDuties.map((duty) => (
-                  <tr key={duty.id}>
-                    <td style={styles.td}>
-                      {new Date(duty.duty_date).toLocaleDateString()}
-                    </td>
-                    <td style={styles.td}>{duty.role?.name || '-'}</td>
-                    <td style={styles.td}>
-                      {duty.shift
-                        ? `${duty.shift.name} (${duty.shift.start_time}-${duty.shift.end_time})`
-                        : '-'}
-                    </td>
-                    <td style={styles.td}>{formatDateTime(duty.checkin_time)}</td>
-                    <td style={styles.td}>{formatDateTime(duty.checkout_time)}</td>
-                    <td style={styles.td}>
-                      <StatusBadge status={duty.attendance_status} />
-                    </td>
-                    <td style={styles.td}>
-                      <button
-                        style={styles.viewBtn}
-                        onClick={() => navigate(`/duty/${duty.id}`)}
-                        onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#1557b0')}
-                        onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#1a73e8')}
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        {/* Today's Duties */}
+        <div style={s.card}>
+          <h2 style={s.cardTitle}>เวรวันนี้</h2>
+          {isMobile ? (
+            activeDuties.length === 0
+              ? <div style={{ textAlign: 'center', padding: '20px', color: '#9ca3af', fontStyle: 'italic' }}>ยังไม่มีการลงเวรวันนี้</div>
+              : activeDuties.map(d => <DutyCard key={d.id} duty={d} />)
+          ) : <DutyTable />}
         </div>
 
         {/* Check-in Form */}
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>New Check-in</h2>
+        <div style={s.card}>
+          <h2 style={s.cardTitle}>ลงเวร</h2>
           <form onSubmit={handleCheckin}>
-            <div style={styles.formRow}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Role</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+              {/* Role */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
+                  ตำแหน่ง
+                </label>
                 <select
-                  style={styles.select}
+                  style={{
+                    width: '100%', padding: '10px 12px', fontSize: '15px',
+                    border: '1.5px solid #d1d5db', borderRadius: '8px',
+                    backgroundColor: '#fff', color: '#111827', cursor: 'pointer', boxSizing: 'border-box',
+                  }}
                   value={selectedRole}
                   onChange={(e) => {
                     const roleId = e.target.value
                     setSelectedRole(roleId)
-                    const roleName = roles.find(r => String(r.id) === roleId)?.name || ''
-                    const allowed = ROLE_SHIFT_MAP[roleName] || []
-                    const filtered = shifts.filter(s => allowed.includes(s.name))
-                    setSelectedShift(filtered.length > 0 ? String(filtered[0].id) : '')
+                    const rName = roles.find(r => String(r.id) === roleId)?.name || ''
+                    const a = ROLE_SHIFT_MAP[rName] || []
+                    const f = shifts.filter(s => a.includes(s.name))
+                    setSelectedShift(f.length > 0 ? String(f[0].id) : '')
                   }}
                   required
                 >
-                  {roles.length === 0 && (
-                    <option value="">No roles assigned</option>
-                  )}
-                  {roles.map((r) => (
-                    <option key={r.id} value={String(r.id)}>
-                      {r.name}
-                    </option>
-                  ))}
-
+                  {roles.length === 0 && <option value="">No roles assigned</option>}
+                  {roles.map(r => <option key={r.id} value={String(r.id)}>{r.name}</option>)}
                 </select>
               </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Shift</label>
-                {(() => {
-                  const roleName = roles.find(r => String(r.id) === selectedRole)?.name || ''
-                  const allowed = ROLE_SHIFT_MAP[roleName] || []
-                  const filtered = shifts.filter(s => allowed.includes(s.name))
-                  return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {filtered.length === 0 && (
-                        <div style={{ color: '#9ca3af', fontSize: '14px' }}>ไม่มีเวรสำหรับ role นี้</div>
-                      )}
-                      {filtered.map((s) => {
-                        const c = SHIFT_COLORS[s.name] || { bg: '#f3f4f6', border: '#d1d5db', text: '#374151' }
-                        const isSelected = selectedShift === String(s.id)
-                        return (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => setSelectedShift(String(s.id))}
-                            style={{
-                              backgroundColor: c.bg,
-                              border: `2px solid ${isSelected ? c.border : '#e5e7eb'}`,
-                              color: c.text,
-                              borderRadius: '8px',
-                              padding: '10px 16px',
-                              textAlign: 'left',
-                              cursor: 'pointer',
-                              fontWeight: isSelected ? '700' : '500',
-                              fontSize: '14px',
-                              boxShadow: isSelected ? `0 0 0 3px ${c.border}40` : 'none',
-                              transition: 'all 0.15s',
-                            }}
-                          >
-                            {isSelected ? '✓ ' : ''}{s.name.replace(/^เวรนอกเวลา\s*/, '')}
-                            <span style={{ marginLeft: '8px', fontSize: '12px', opacity: 0.75 }}>
-                              ({s.start_time} - {s.end_time})
-                            </span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )
-                })()}
+              {/* Shift */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                  เวร
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {filteredShifts.length === 0 && (
+                    <div style={{ color: '#9ca3af', fontSize: '14px' }}>ไม่มีเวรสำหรับ role นี้</div>
+                  )}
+                  {filteredShifts.map(s => {
+                    const c = SHIFT_COLORS[s.name] || { bg: '#f3f4f6', border: '#d1d5db', text: '#374151' }
+                    const isSelected = selectedShift === String(s.id)
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setSelectedShift(String(s.id))}
+                        style={{
+                          backgroundColor: c.bg,
+                          border: `2px solid ${isSelected ? c.border : '#e5e7eb'}`,
+                          color: c.text, borderRadius: '10px',
+                          padding: isMobile ? '12px 16px' : '10px 16px',
+                          textAlign: 'left', cursor: 'pointer',
+                          fontWeight: isSelected ? '700' : '500',
+                          fontSize: isMobile ? '15px' : '14px',
+                          boxShadow: isSelected ? `0 0 0 3px ${c.border}40` : 'none',
+                        }}
+                      >
+                        {isSelected ? '✓ ' : ''}{s.name.replace(/^เวรนอกเวลา\s*/, '')}
+                        <span style={{ marginLeft: '8px', fontSize: '12px', opacity: 0.75 }}>
+                          ({s.start_time} - {s.end_time})
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
+              {/* Submit */}
               <button
                 type="submit"
-                disabled={submitting || roles.length === 0 || shifts.length === 0}
+                disabled={submitting || roles.length === 0 || filteredShifts.length === 0}
                 style={{
-                  ...styles.checkinBtn,
-                  ...(submitting || roles.length === 0 || shifts.length === 0
-                    ? styles.checkinBtnDisabled
-                    : {}),
-                }}
-                onMouseOver={(e) => {
-                  if (!submitting) e.currentTarget.style.backgroundColor = '#15803d'
-                }}
-                onMouseOut={(e) => {
-                  if (!submitting) e.currentTarget.style.backgroundColor = '#16a34a'
+                  width: '100%', padding: isMobile ? '14px' : '11px',
+                  borderRadius: '10px', border: 'none',
+                  backgroundColor: (submitting || roles.length === 0 || filteredShifts.length === 0) ? '#86efac' : '#16a34a',
+                  color: '#fff', fontSize: isMobile ? '16px' : '15px',
+                  fontWeight: '700', cursor: submitting ? 'not-allowed' : 'pointer',
                 }}
               >
-                {submitting ? 'Checking in...' : 'Check In'}
+                {submitting ? 'กำลังลงเวร...' : '✓ ลงเวร'}
               </button>
             </div>
           </form>
