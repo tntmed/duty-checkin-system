@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คู่มือการใช้งานระบบลงเวร ศูนย์สารสนเทศ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --primary: #1a73e8;
+    --primary-dark: #1557b0;
+    --accent: #16a34a;
+    --warning: #ca8a04;
+    --danger: #dc2626;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-600: #475569;
+    --gray-800: #1e293b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    font-size: 15px;
+    color: var(--gray-800);
+    background: #fff;
+    line-height: 1.7;
+  }
+
+  /* ── Cover Page ── */
+  .cover {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a73e8 0%, #0f4fa8 50%, #0a3578 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 40px;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    top: -150px; right: -150px;
+  }
+
+  .cover::after {
+    content: '';
+    position: absolute;
+    width: 350px; height: 350px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    bottom: -100px; left: -100px;
+  }
+
+  .cover-logo {
+    width: 90px; height: 90px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 42px;
+    margin-bottom: 32px;
+    border: 2px solid rgba(255,255,255,0.3);
+    backdrop-filter: blur(10px);
+  }
+
+  .cover-tag {
+    background: rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.9);
+    padding: 6px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+
+  .cover h1 {
+    color: #fff;
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
+  .cover h2 {
+    color: rgba(255,255,255,0.8);
+    font-size: 20px;
+    font-weight: 400;
+    margin-bottom: 48px;
+  }
+
+  .cover-url {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 12px;
+    padding: 14px 28px;
+    color: #fff;
+    font-size: 15px;
+    backdrop-filter: blur(10px);
+  }
+
+  .cover-url span { opacity: 0.7; font-size: 13px; }
+  .cover-url a { color: #fff; text-decoration: none; font-weight: 600; font-size: 17px; }
+
+  .cover-footer {
+    position: absolute;
+    bottom: 32px;
+    color: rgba(255,255,255,0.5);
+    font-size: 13px;
+  }
+
+  /* ── TOC ── */
+  .toc-page {
+    padding: 60px 70px;
+    page-break-after: always;
+    min-height: 100vh;
+  }
+
+  .section-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--primary);
+    color: #fff;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .toc-page h2 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 36px;
+    padding-bottom: 16px;
+    border-bottom: 3px solid var(--primary);
+  }
+
+  .toc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .toc-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    background: var(--gray-50);
+    border-radius: 12px;
+    border: 1px solid var(--gray-200);
+  }
+
+  .toc-num {
+    width: 36px; height: 36px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .toc-text { font-size: 14px; font-weight: 600; color: var(--gray-800); }
+  .toc-sub { font-size: 12px; color: var(--gray-600); margin-top: 2px; }
+
+  /* ── Content Pages ── */
+  .page {
+    padding: 60px 70px;
+    page-break-before: always;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 36px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--gray-200);
+  }
+
+  .page-icon {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(26,115,232,0.3);
+  }
+
+  .page-header h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--gray-800);
+  }
+
+  .page-header .chapter {
+    font-size: 12px;
+    color: var(--primary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── Steps ── */
+  .steps { margin: 20px 0; }
+
+  .step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    width: 32px; height: 32px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .step-content { flex: 1; padding-top: 4px; }
+  .step-content strong { font-weight: 600; color: var(--gray-800); }
+
+  /* ── Info Box ── */
+  .info-box {
+    display: flex;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+    align-items: flex-start;
+  }
+
+  .info-box.blue { background: #eff6ff; border-left: 4px solid var(--primary); }
+  .info-box.green { background: #f0fdf4; border-left: 4px solid var(--accent); }
+  .info-box.yellow { background: #fefce8; border-left: 4px solid var(--warning); }
+  .info-box.red { background: #fef2f2; border-left: 4px solid var(--danger); }
+
+  .info-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .info-text { font-size: 14px; line-height: 1.6; }
+  .info-text strong { display: block; margin-bottom: 4px; font-size: 14px; }
+
+  /* ── Table ── */
+  .styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 14px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+  }
+
+  .styled-table thead tr {
+    background: var(--primary);
+    color: #fff;
+  }
+
+  .styled-table th {
+    padding: 13px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+
+  .styled-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--gray-200);
+    color: var(--gray-800);
+    vertical-align: top;
+  }
+
+  .styled-table tbody tr:nth-child(even) { background: var(--gray-50); }
+  .styled-table tbody tr:last-child td { border-bottom: none; }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-yellow { background: #fef9c3; color: #854d0e; }
+  .badge-orange { background: #ffedd5; color: #9a3412; }
+  .badge-red { background: #fee2e2; color: #b91c1c; }
+  .badge-gray { background: #f1f5f9; color: #475569; }
+  .badge-confirmed { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+  .badge-pending { background: #fef9c3; color: #854d0e; border: 1px dashed #fde68a; }
+
+  /* ── Card ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin: 20px 0;
+  }
+
+  .card {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 14px;
+    padding: 20px;
+  }
+
+  .card-icon { font-size: 28px; margin-bottom: 10px; }
+  .card h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--gray-800); }
+  .card p { font-size: 13px; color: var(--gray-600); line-height: 1.6; }
+
+  /* ── Section heading inside page ── */
+  .sub-heading {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin: 28px 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sub-heading::before {
+    content: '';
+    width: 4px; height: 20px;
+    background: var(--primary);
+    border-radius: 2px;
+  }
+
+  /* ── FAQ ── */
+  .faq-item {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .faq-q {
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 8px;
+    font-size: 14px;
+    display: flex; gap: 8px;
+  }
+
+  .faq-a {
+    font-size: 14px;
+    color: var(--gray-600);
+    padding-left: 24px;
+    line-height: 1.6;
+  }
+
+  /* ── Footer on each page ── */
+  .page-footer {
+    margin-top: 48px;
+    padding-top: 16px;
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--gray-600);
+  }
+
+  /* ── Print ── */
+  @media print {
+    body { font-size: 14px; }
+    .cover, .toc-page, .page { padding: 48px 56px; }
+    .cover { min-height: auto; height: 100vh; }
+    .no-print { display: none; }
+  }
+
+  /* ── Print button ── */
+  .print-btn {
+    position: fixed;
+    bottom: 32px; right: 32px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(26,115,232,0.4);
+    font-family: 'Sarabun', sans-serif;
+    display: flex; align-items: center; gap: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── COVER ── -->
+<div class="cover">
+  <div class="cover-logo">📋</div>
+  <div class="cover-tag">User Manual</div>
+  <h1>คู่มือการใช้งาน<br>ระบบลงเวร</h1>
+  <h2>ศูนย์สารสนเทศ โรงพยาบาลพระมงกุฎเกล้า</h2>
+  <div class="cover-url">
+    <span>เข้าใช้งานได้ที่</span><br>
+    <a href="https://tk.pmk.ac.th/dutycheckin/">https://tk.pmk.ac.th/dutycheckin/</a>
+  </div>
+  <div class="cover-footer">อัปเดตล่าสุด เมษายน 2569 • ศูนย์สารสนเทศ</div>
+</div>
+
+<!-- ── TABLE OF CONTENTS ── -->
+<div class="toc-page">
+  <div class="section-tag">📑 สารบัญ</div>
+  <h2>เนื้อหาในคู่มือ</h2>
+  <div class="toc-grid">
+    <div class="toc-item">
+      <div class="toc-num">1</div>
+      <div><div class="toc-text">การเข้าสู่ระบบ</div><div class="toc-sub">Login / ลืมรหัสผ่าน</div></div>
+    </div>
+    <div class="toc-item">
+      <div class="toc-num">2</div>
+      <div><div class="toc-text">การลงเวร (Check-in)</div><div class="toc-sub">เลือกตำแหน่ง / สถานะอัตโนมัติ</div></div>
+    </div>
+    <div class="toc-item">
+      <div class="toc-num">3</div>
+      <div><div class="toc-text">หน้าบันทึกการเวร</div><div class="toc-sub">ภาพรวม Duty Page</div></div>
+    </div>
+    <div class="toc-item">
+      <div class="toc-num">4</div>
+      <div><div class="toc-text">การบันทึก Checklist</div><div class="toc-sub">OK / NOT OK / N/A</div></div>
+    </div>
+    <div class="toc-item">
+      <div class="toc-num">5</div>
+      <div><div class="toc-text">การรายงาน Incident</div><div class="toc-sub">บันทึก / แก้ไข / อัปเดตสถานะ</div></div>
+    </div>
+    <div class="toc-item">
+      <div class="toc-num">6</div>
+      <div><div class="toc-text">การแนบรูปภาพ</div><div class="toc-sub">Upload สูงสุด 8 รูป / ดู Gallery</div></div>
+    </div>
+    <div class="toc-item">
+      <div class="toc-num">7</div>
+      <div><div class="toc-text">การออกจากเวร</div><div class="toc-sub">Check-out อัตโนมัติ (ไม่มีปุ่ม)</div></div>
+    </div>
+    <div class="toc-item">
+      <div class="toc-num">8</div>
+      <div><div class="toc-text">Confirm สถานะการมาเวร</div><div class="toc-sub">สำหรับนายสิบเวร</div></div>
+    </div>
+    <div class="toc-item">
+      <div class="toc-num">9</div>
+      <div><div class="toc-text">Dashboard</div><div class="toc-sub">สรุปสถิติ / Export Excel</div></div>
+    </div>
+    <div class="toc-item">
+      <div class="toc-num">10</div>
+      <div><div class="toc-text">เปลี่ยนรหัสผ่าน</div><div class="toc-sub">Change Password</div></div>
+    </div>
+    <div class="toc-item" style="grid-column: 1 / -1">
+      <div class="toc-num">11</div>
+      <div><div class="toc-text">คำถามที่พบบ่อย</div><div class="toc-sub">FAQ</div></div>
+    </div>
+  </div>
+
+  <div style="margin-top:40px">
+    <div class="info-box blue">
+      <div class="info-icon">💡</div>
+      <div class="info-text">
+        <strong>เกี่ยวกับระบบนี้</strong>
+        ระบบลงเวร ศูนย์สารสนเทศ ใช้สำหรับบันทึกการเข้า-ออกเวร ตรวจสอบรายการ Checklist รายงาน Incident และแนบรูปภาพประกอบ รองรับการใช้งานบนมือถือและคอมพิวเตอร์
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>ระบบลงเวร ศูนย์สารสนเทศ</span>
+    <span>สารบัญ</span>
+  </div>
+</div>
+
+<!-- ── PAGE 1: LOGIN ── -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-icon">🔐</div>
+    <div>
+      <div class="chapter">บทที่ 1</div>
+      <h2>การเข้าสู่ระบบ</h2>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">เปิด Browser (Chrome / Edge แนะนำ) แล้วพิมพ์ที่อยู่ <strong>https://tk.pmk.ac.th/dutycheckin/</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">กรอก <strong>รหัสพนักงาน</strong> และ <strong>รหัสผ่าน</strong> ในช่องที่กำหนด</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">กดปุ่ม <strong>Login</strong> เพื่อเข้าสู่ระบบ</div>
+    </div>
+  </div>
+
+  <div class="info-box yellow">
+    <div class="info-icon">🔑</div>
+    <div class="info-text">
+      <strong>ลืมรหัสผ่าน?</strong>
+      กดลิงก์ "Forgot Password" ที่หน้า Login → กรอก Email ของคุณ → รอรับลิงก์รีเซ็ตรหัสผ่านใน Email → คลิกลิงก์แล้วตั้งรหัสผ่านใหม่
+    </div>
+  </div>
+
+  <div class="info-box blue">
+    <div class="info-icon">📱</div>
+    <div class="info-text">
+      <strong>ใช้บนมือถือได้เลย!</strong>
+      เปิด Browser บนมือถือแล้วเข้า URL เดิมได้เลย ระบบรองรับหน้าจอทุกขนาด
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>ระบบลงเวร ศูนย์สารสนเทศ</span>
+    <span>บทที่ 1 • การเข้าสู่ระบบ</span>
+  </div>
+</div>
+
+<!-- ── PAGE 2: CHECK-IN ── -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-icon">✅</div>
+    <div>
+      <div class="chapter">บทที่ 2</div>
+      <h2>การลงเวร (Check-in)</h2>
+    </div>
+  </div>
+
+  <p style="color:var(--gray-600);margin-bottom:24px">หลัง Login ระบบจะพาเข้าหน้าลงเวรอัตโนมัติ แสดงรายชื่อผู้ที่ลงเวรวันนี้ไปแล้วด้านบน</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">ตรวจสอบส่วน <strong>"เวรวันนี้"</strong> ว่ามีใครลงเวรไปแล้วบ้าง</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">เลือก <strong>ตำแหน่ง</strong> ของตนเองจาก dropdown</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">เลือก <strong>ประเภทเวร</strong> ที่ตรงกับวันและเวลานั้น</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">กดปุ่ม <strong>✓ ลงเวร</strong> สีเขียว — ระบบจะบันทึกเวลา Check-in ทันที</div>
+    </div>
+  </div>
+
+  <div class="sub-heading">ตารางตำแหน่งและประเภทเวร</div>
+
+  <table class="styled-table">
+    <thead>
+      <tr>
+        <th>ตำแหน่ง</th>
+        <th>ประเภทเวรที่เลือกได้</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>สิบเวร / ผู้ช่วยสิบเวร / โปรแกรมเมอร์</strong></td>
+        <td>
+          <span class="badge badge-blue">เวรวันราชการ</span>
+          <span class="badge badge-green" style="margin-left:6px">วันหยุด</span>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>ช่าง</strong></td>
+        <td>
+          <span class="badge badge-blue">วันราชการ</span>
+          <span class="badge badge-gray" style="margin-left:6px">วันราชการกลางคืน</span>
+          <span class="badge badge-yellow" style="margin-left:6px">วันหยุดรอบเช้า</span>
+          <span class="badge badge-orange" style="margin-left:6px">วันหยุดรอบค่ำ</span>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>เวรนอกเวลา</strong></td>
+        <td>
+          <span class="badge badge-blue">เวรนอกเวลาวันราชการ</span>
+          <span class="badge badge-orange" style="margin-left:6px">เวรนอกเวลาวันหยุด</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sub-heading">สถานะการมาเวร (คำนวณอัตโนมัติ)</div>
+  <p style="color:var(--gray-600);margin-bottom:12px">ระบบคำนวณสถานะให้ทันทีที่ลงเวร โดยเทียบเวลา Check-in กับเวลาเริ่มเวร</p>
+
+  <table class="styled-table">
+    <thead><tr><th>สถานะ</th><th>เงื่อนไข</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-green">มาปกติ (PRESENT)</span></td>
+        <td>ลงเวรก่อน หรือภายใน <strong>15 นาที</strong> หลังเวลาเริ่มเวร</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-yellow">มาสาย (LATE)</span></td>
+        <td>ลงเวรหลังเวลาเริ่มเวรเกิน <strong>15 นาที</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="info-box blue">
+    <div class="info-icon">ℹ️</div>
+    <div class="info-text">
+      <strong>สถานะรอการ Confirm</strong>
+      สถานะที่คำนวณอัตโนมัตินี้ยังต้องรอ <strong>นายสิบเวร</strong> ยืนยันอีกครั้ง (ดูบทที่ 8) หากสถานะไม่ถูกต้อง นายสิบเวรสามารถแก้ไขได้
+    </div>
+  </div>
+
+  <div class="info-box red">
+    <div class="info-icon">⚠️</div>
+    <div class="info-text">
+      <strong>ข้อควรระวัง</strong>
+      ไม่สามารถลงเวรซ้ำในตำแหน่ง/เวรเดิมในวันเดียวกันได้ ระบบจะแสดง error หากพยายามลงเวรซ้ำ
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>ระบบลงเวร ศูนย์สารสนเทศ</span>
+    <span>บทที่ 2 • การลงเวร</span>
+  </div>
+</div>
+
+<!-- ── PAGE 3: DUTY PAGE ── -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-icon">📄</div>
+    <div>
+      <div class="chapter">บทที่ 3</div>
+      <h2>หน้าบันทึกการเวร</h2>
+    </div>
+  </div>
+
+  <p style="color:var(--gray-600);margin-bottom:24px">หลังลงเวรแล้ว ระบบจะพาเข้าหน้า Duty Page ซึ่งแบ่งเป็น 5 ส่วนหลัก</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">📋</div>
+      <h4>1. Duty Details</h4>
+      <p>แสดงวันที่ / ตำแหน่ง / ประเภทเวร / เวลาเข้า-ออก / สถานะการเวร</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">✅</div>
+      <h4>2. Checklist</h4>
+      <p>รายการตรวจสอบประจำเวร กรอก OK / NOT OK / N/A พร้อมหมายเหตุ</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🚨</div>
+      <h4>3. Incidents</h4>
+      <p>รายงานเหตุการณ์ที่พบระหว่างเวร พร้อมแนบรูปภาพประกอบ</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">⏱️</div>
+      <h4>4. Activity Timeline</h4>
+      <p>ประวัติกิจกรรมทั้งหมดในเวรนี้ เรียงตามเวลา</p>
+    </div>
+    <div class="card" style="grid-column: 1 / -1">
+      <div class="card-icon">🖼️</div>
+      <h4>5. รูปภาพประกอบการเวร</h4>
+      <p>แนบรูปภาพทั่วไปของการเวร (ไม่เกี่ยวกับ Incident) ได้สูงสุด 8 รูป กดดูรูปเต็มจอได้</p>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>ระบบลงเวร ศูนย์สารสนเทศ</span>
+    <span>บทที่ 3 • หน้าบันทึกการเวร</span>
+  </div>
+</div>
+
+<!-- ── PAGE 4: CHECKLIST ── -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-icon">☑️</div>
+    <div>
+      <div class="chapter">บทที่ 4</div>
+      <h2>การบันทึก Checklist</h2>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">เลื่อนลงมาที่ส่วน <strong>Checklist</strong> จะเห็นรายการตรวจสอบทั้งหมด</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">กดปุ่มสถานะสำหรับแต่ละรายการ</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">ใส่ <strong>หมายเหตุ</strong> ในช่อง remark ใต้แต่ละรายการ (ถ้ามี)</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">กดปุ่ม <strong>Save All</strong> สีเขียว เพื่อบันทึกทั้งหมดพร้อมกัน</div>
+    </div>
+  </div>
+
+  <div class="sub-heading">ความหมายของสถานะ</div>
+
+  <table class="styled-table">
+    <thead>
+      <tr><th>ปุ่ม</th><th>ความหมาย</th><th>เมื่อไหร่ใช้</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-green">OK</span></td>
+        <td>ปกติ / ผ่าน</td>
+        <td>ตรวจแล้วทุกอย่างเรียบร้อยดี</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-red">NOT OK</span></td>
+        <td>ผิดปกติ / ไม่ผ่าน</td>
+        <td>พบความผิดปกติ ควรใส่หมายเหตุอธิบาย</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-gray">N/A</span></td>
+        <td>ไม่เกี่ยวข้อง</td>
+        <td>รายการนั้นไม่เกี่ยวกับเวรนี้</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="info-box yellow">
+    <div class="info-icon">⭐</div>
+    <div class="info-text">
+      <strong>รายการบังคับ</strong>
+      รายการที่มีเครื่องหมาย <strong style="color:var(--danger)">*</strong> สีแดง คือรายการที่ต้องกรอกทุกครั้ง
+    </div>
+  </div>
+
+  <div class="info-box red">
+    <div class="info-icon">🔒</div>
+    <div class="info-text">
+      <strong>หลัง Check-out อัตโนมัติ แก้ไขไม่ได้</strong>
+      เมื่อระบบบันทึก Check-out ให้เมื่อสิ้นสุดเวร Checklist จะถูกล็อคทันที ควรตรวจสอบให้ครบก่อนสิ้นสุดเวร
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>ระบบลงเวร ศูนย์สารสนเทศ</span>
+    <span>บทที่ 4 • การบันทึก Checklist</span>
+  </div>
+</div>
+
+<!-- ── PAGE 5: INCIDENT ── -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-icon">🚨</div>
+    <div>
+      <div class="chapter">บทที่ 5</div>
+      <h2>การรายงาน Incident</h2>
+    </div>
+  </div>
+
+  <div class="sub-heading">การเพิ่ม Incident ใหม่</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">กดปุ่ม <strong>+ Add Incident</strong> สีน้ำเงิน มุมขวาบนของส่วน Incidents</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">เลือก <strong>ประเภท</strong> และ <strong>ระดับผลกระทบ</strong> จาก dropdown</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">กรอก <strong>รายละเอียด</strong> อธิบายเหตุการณ์ให้ครบถ้วน</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">กดปุ่ม <strong>Submit Incident</strong></div>
+    </div>
+  </div>
+
+  <table class="styled-table">
+    <thead><tr><th>ฟิลด์</th><th>ตัวเลือก</th><th>คำอธิบาย</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="3"><strong>Incident Type</strong></td><td><span class="badge badge-gray">Routine</span></td><td>เหตุการณ์ปกติทั่วไป</td></tr>
+      <tr><td><span class="badge badge-red">Incident</span></td><td>เหตุการณ์ผิดปกติ</td></tr>
+      <tr><td><span class="badge badge-blue">Maintenance</span></td><td>งานซ่อมบำรุง</td></tr>
+      <tr><td rowspan="4"><strong>Impact Level</strong></td><td><span class="badge badge-gray">None</span></td><td>ไม่มีผลกระทบ</td></tr>
+      <tr><td><span class="badge badge-yellow">Minor</span></td><td>ผลกระทบเล็กน้อย</td></tr>
+      <tr><td><span class="badge badge-orange">Major</span></td><td>ผลกระทบมาก</td></tr>
+      <tr><td><span class="badge badge-red">Critical</span></td><td>วิกฤต ต้องแก้ไขด่วน</td></tr>
+    </tbody>
+  </table>
+
+  <div class="sub-heading">การแก้ไข Incident (กรณีกรอกผิด)</div>
+  <p style="color:var(--gray-600);margin-bottom:14px">กดปุ่ม <strong>✏️ แก้ไข</strong> สีส้มใต้ detail → แก้ไขข้อมูล → กด <strong>บันทึก</strong></p>
+
+  <div class="sub-heading">สถานะ Incident</div>
+  <table class="styled-table">
+    <thead><tr><th>สถานะ</th><th>ความหมาย</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-red">Open</span></td><td>เปิดรับเรื่อง รอดำเนินการ</td></tr>
+      <tr><td><span class="badge badge-yellow">In Progress</span></td><td>กำลังดำเนินการแก้ไข</td></tr>
+      <tr><td><span class="badge badge-green">Resolved</span></td><td>แก้ไขเสร็จแล้ว</td></tr>
+      <tr><td><span class="badge badge-gray">Closed</span></td><td>ปิดเรื่อง (ล็อค ไม่สามารถแก้ไขได้อีก)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="page-footer">
+    <span>ระบบลงเวร ศูนย์สารสนเทศ</span>
+    <span>บทที่ 5 • การรายงาน Incident</span>
+  </div>
+</div>
+
+<!-- ── PAGE 6: PHOTOS ── -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-icon">🖼️</div>
+    <div>
+      <div class="chapter">บทที่ 6</div>
+      <h2>การแนบรูปภาพ</h2>
+    </div>
+  </div>
+
+  <div class="sub-heading">รูปภาพประกอบ Incident</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">กดปุ่ม <strong>🖼 n รูป</strong> สีม่วงใต้ detail ของ incident ที่ต้องการแนบรูป</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">กด <strong>Choose files</strong> แล้วเลือกรูปได้สูงสุด <strong>8 รูป</strong> พร้อมกัน</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">กดปุ่ม <strong>Upload</strong> รอสักครู่จนระบบแจ้งว่าอัปโหลดสำเร็จ</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">รูปจะแสดงเป็น <strong>thumbnail</strong> ใต้ incident นั้น กดรูปเพื่อดูเต็มจอ</div>
+    </div>
+  </div>
+
+  <div class="sub-heading">รูปภาพประกอบการเวร (ส่วนล่างสุด)</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">เลื่อนลงมาที่ส่วน <strong>"รูปภาพประกอบการเวร"</strong> ด้านล่างสุดของหน้า</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">กด <strong>Choose files</strong> เลือกรูปสูงสุด <strong>8 รูป</strong> แล้วกด <strong>Upload</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">รูปจะแสดงเป็น <strong>gallery</strong> ขนาด thumbnail กด thumbnail เพื่อดูเต็มจอ</div>
+    </div>
+  </div>
+
+  <div class="info-box blue">
+    <div class="info-icon">📸</div>
+    <div class="info-text">
+      <strong>ข้อกำหนดไฟล์รูปภาพ</strong>
+      รองรับ JPG, PNG • ขนาดสูงสุดต่อรูป 10 MB • เลือกได้สูงสุด 8 รูปพร้อมกัน
+    </div>
+  </div>
+
+  <div class="info-box green">
+    <div class="info-icon">💾</div>
+    <div class="info-text">
+      <strong>รูปภาพเก็บถาวร ดูย้อนหลังได้ตลอด</strong>
+      รูปทั้งหมดเก็บในระบบ server สามารถกลับมาดูได้ทุกเมื่อ โดยเข้าหน้า Duty เก่าแล้วกด 🖼 n รูป
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>ระบบลงเวร ศูนย์สารสนเทศ</span>
+    <span>บทที่ 6 • การแนบรูปภาพ</span>
+  </div>
+</div>
+
+<!-- ── PAGE 7: AUTO CHECK-OUT ── -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-icon">🚪</div>
+    <div>
+      <div class="chapter">บทที่ 7</div>
+      <h2>การออกจากเวร (Check-out อัตโนมัติ)</h2>
+    </div>
+  </div>
+
+  <div class="info-box blue">
+    <div class="info-icon">🤖</div>
+    <div class="info-text">
+      <strong>ระบบไม่มีปุ่ม Check-out</strong>
+      ระบบจะบันทึกเวลาออกให้ <strong>อัตโนมัติ</strong> เมื่อถึงเวลาสิ้นสุดของเวรที่เลือกไว้ ผู้ใช้ไม่ต้องกดปุ่มใดๆ
+    </div>
+  </div>
+
+  <div class="sub-heading">วิธีการทำงาน</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">เมื่อเวลาปัจจุบัน <strong>ถึงหรือเกิน</strong> เวลาสิ้นสุดเวร ระบบจะบันทึก Check-out ให้อัตโนมัติ</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">เวลา Check-out ที่บันทึกจะเป็น <strong>เวลาสิ้นสุดเวร</strong> ตามที่กำหนดในระบบ</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">หลัง Check-out แล้ว <strong>Checklist จะถูกล็อค</strong> ไม่สามารถแก้ไขได้อีก</div>
+    </div>
+  </div>
+
+  <div class="sub-heading">ตัวอย่างเวลา Check-out อัตโนมัติ</div>
+
+  <table class="styled-table">
+    <thead><tr><th>ประเภทเวร</th><th>เวลาเริ่ม</th><th>Check-out อัตโนมัติเมื่อ</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>เวรวันราชการ</td>
+        <td>08:30 น.</td>
+        <td><strong>16:30 น.</strong> ของวันนั้น</td>
+      </tr>
+      <tr>
+        <td>เวรวันราชการกลางคืน</td>
+        <td>16:30 น.</td>
+        <td><strong>08:30 น.</strong> ของวันถัดไป</td>
+      </tr>
+      <tr>
+        <td>เวรวันหยุดรอบเช้า</td>
+        <td>08:00 น.</td>
+        <td><strong>16:00 น.</strong> ของวันนั้น</td>
+      </tr>
+      <tr>
+        <td>เวรวันหยุดรอบค่ำ</td>
+        <td>16:00 น.</td>
+        <td><strong>08:00 น.</strong> ของวันถัดไป</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="info-box yellow">
+    <div class="info-icon">💡</div>
+    <div class="info-text">
+      <strong>เปิดหน้า Duty หลังสิ้นสุดเวร</strong>
+      หากเปิดหน้า Duty ขึ้นมาหลังเวลาสิ้นสุดเวรแล้ว ระบบจะแสดงสถานะ Check-out ทันที พร้อมบันทึกเวลาสิ้นสุดเวรให้อัตโนมัติ
+    </div>
+  </div>
+
+  <div class="info-box red">
+    <div class="info-icon">🔒</div>
+    <div class="info-text">
+      <strong>หลัง Check-out จะแก้ไข Checklist ไม่ได้</strong>
+      ควรตรวจสอบและกรอก Checklist ให้ครบถ้วนก่อนสิ้นสุดเวร
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>ระบบลงเวร ศูนย์สารสนเทศ</span>
+    <span>บทที่ 7 • Check-out อัตโนมัติ</span>
+  </div>
+</div>
+
+<!-- ── PAGE 8: CONFIRM ATTENDANCE ── -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-icon">👮</div>
+    <div>
+      <div class="chapter">บทที่ 8</div>
+      <h2>การ Confirm สถานะการมาเวร</h2>
+    </div>
+  </div>
+
+  <p style="color:var(--gray-600);margin-bottom:20px">ฟีเจอร์นี้ให้ <strong>นายสิบเวรประจำวัน</strong> เป็นผู้รับรองสถานะการมาเวรของทีม</p>
+
+  <div class="info-box blue">
+    <div class="info-icon">👤</div>
+    <div class="info-text">
+      <strong>ผู้มีสิทธิ์ Confirm</strong>
+      ผู้ที่ <strong>ลงเวรในตำแหน่ง "สิบเวร"</strong> ในวันนั้น หรือ <strong>ผู้ดูแลระบบ (Admin)</strong> เท่านั้น
+    </div>
+  </div>
+
+  <div class="sub-heading">ขั้นตอนการ Confirm (จากหน้า Dashboard)</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">เข้าหน้า <strong>Dashboard</strong> กดปุ่ม Dashboard ที่ navbar</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">ดูที่แต่ละ row/การ์ด จะเห็น badge <span class="badge badge-pending">รอ confirm</span> สำหรับรายการที่ยังไม่ได้ยืนยัน</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">กดปุ่ม <strong>✓ Confirm สถานะ</strong> ที่การ์ดของผู้ที่ต้องการยืนยัน</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">เลือกสถานะที่ถูกต้องในหน้าต่าง Confirm</div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">กดปุ่ม <strong>✓ บันทึก</strong> — badge จะเปลี่ยนเป็น <span class="badge badge-confirmed">✓ confirmed</span></div>
+    </div>
+  </div>
+
+  <div class="sub-heading">สถานะที่เลือกได้</div>
+  <table class="styled-table">
+    <thead><tr><th>สถานะ</th><th>ความหมาย</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-green">มาปกติ</span></td><td>มาทำงานตามปกติ</td></tr>
+      <tr><td><span class="badge badge-yellow">มาสาย</span></td><td>มาช้ากว่าเวลาที่กำหนด</td></tr>
+      <tr><td><span class="badge badge-blue">ลา</span></td><td>ได้รับอนุญาตให้ลาหยุด</td></tr>
+      <tr><td><span class="badge badge-red">ขาด</span></td><td>ไม่มาทำงานโดยไม่แจ้ง</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-box yellow">
+    <div class="info-icon">⏰</div>
+    <div class="info-text">
+      <strong>ข้อกำหนดสำคัญ</strong>
+      Confirm ได้เฉพาะ <strong>วันเดียวกัน</strong> กับวันที่ลงเวร • หลัง Confirm แล้วแก้ไขได้ภายใน <strong>24 ชั่วโมง</strong> เท่านั้น
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>ระบบลงเวร ศูนย์สารสนเทศ</span>
+    <span>บทที่ 8 • Confirm สถานะการมาเวร</span>
+  </div>
+</div>
+
+<!-- ── PAGE 9: DASHBOARD ── -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-icon">📊</div>
+    <div>
+      <div class="chapter">บทที่ 9</div>
+      <h2>Dashboard (ผู้บริหาร/หัวหน้า)</h2>
+    </div>
+  </div>
+
+  <p style="color:var(--gray-600);margin-bottom:20px">กดปุ่ม <strong>Dashboard</strong> ที่ navbar เพื่อดูภาพรวมการเวรทั้งหมด</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">📈</div>
+      <h4>KPI สรุปสถิติ</h4>
+      <p>เวรทั้งหมด / Incident เปิด / Checklist Issues / รอ Check-out — แตะการ์ดเพื่อกรองข้อมูล</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔍</div>
+      <h4>ค้นหาและ Filter</h4>
+      <p>Filter ตามวันที่ / ตำแหน่ง / ประเภทเวร / สถานะ</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📥</div>
+      <h4>Export Excel</h4>
+      <p>ดาวน์โหลดรายงานการเวรทั้งหมดเป็นไฟล์ Excel พร้อมรายละเอียด Incident</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">⏰</div>
+      <h4>ดูย้อนหลัง</h4>
+      <p>เลือกวันที่ในอดีตเพื่อดูข้อมูลการเวร, Incidents และสถานะการ Confirm ย้อนหลัง</p>
+    </div>
+  </div>
+
+  <div class="sub-heading">Badge สถานะ Confirm ในตาราง</div>
+  <table class="styled-table">
+    <thead><tr><th>Badge</th><th>ความหมาย</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-confirmed">✓ confirmed</span></td>
+        <td>นายสิบเวรรับรองสถานะแล้ว</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-pending">รอ confirm</span></td>
+        <td>ยังรอการรับรองจากนายสิบเวร</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="info-box blue">
+    <div class="info-icon">📱</div>
+    <div class="info-text">
+      <strong>Dashboard บนมือถือ</strong>
+      บนมือถือ Dashboard จะแสดงเป็น <strong>การ์ดแนวตั้ง</strong> แทนตาราง แตะที่การ์ดเพื่อดูรายละเอียดเวรนั้น ปุ่ม Confirm จะปรากฏในการ์ดสำหรับนายสิบเวร
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>ระบบลงเวร ศูนย์สารสนเทศ</span>
+    <span>บทที่ 9 • Dashboard</span>
+  </div>
+</div>
+
+<!-- ── PAGE 10-11: PASSWORD + FAQ ── -->
+<div class="page">
+  <div class="page-header">
+    <div class="page-icon">🔑</div>
+    <div>
+      <div class="chapter">บทที่ 10</div>
+      <h2>การเปลี่ยนรหัสผ่าน</h2>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">กดปุ่ม <strong>Change Password</strong> ที่ navbar หรือเมนูของผู้ใช้</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">กรอก <strong>รหัสผ่านเดิม</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">กรอก <strong>รหัสผ่านใหม่</strong> และยืนยันรหัสผ่านใหม่อีกครั้ง</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">กดปุ่ม <strong>บันทึก</strong></div>
+    </div>
+  </div>
+
+  <div style="height:36px"></div>
+
+  <div class="page-header" style="margin-top:0">
+    <div class="page-icon">❓</div>
+    <div>
+      <div class="chapter">บทที่ 11</div>
+      <h2>คำถามที่พบบ่อย (FAQ)</h2>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">❓ ลืมรหัสผ่านทำอย่างไร?</div>
+    <div class="faq-a">กด "Forgot Password" ที่หน้า Login → กรอก Email → รอรับลิงก์รีเซ็ตทาง Email → ตั้งรหัสผ่านใหม่</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">❓ ทำไมสถานะขึ้น "มาสาย" ทั้งที่รู้สึกว่ามาทัน?</div>
+    <div class="faq-a">ระบบคำนวณจากเวลาที่กด "ลงเวร" เทียบกับเวลาเริ่มเวร โดยมี grace period 15 นาที หากไม่ถูกต้อง ให้แจ้ง <strong>นายสิบเวร</strong> เพื่อ Confirm แก้ไขสถานะ</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">❓ ระบบ Check-out ให้อัตโนมัติตอนไหน?</div>
+    <div class="faq-a">เมื่อเวลาปัจจุบันถึงเวลาสิ้นสุดเวรที่เลือกไว้ เช่น เวรวันราชการ Check-out อัตโนมัติเวลา 16:30 น. เวรกลางคืน Check-out 08:30 น. ของวันถัดไป</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">❓ ใครสามารถ Confirm สถานะการมาเวรได้?</div>
+    <div class="faq-a">เฉพาะผู้ที่ <strong>ลงเวรในตำแหน่ง "สิบเวร"</strong> ในวันนั้น หรือ Admin เท่านั้น สามารถ Confirm ได้เฉพาะวันเดียวกัน และแก้ไขได้ภายใน 24 ชั่วโมงหลัง Confirm</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">❓ กลับมาดูรูปภาพของเวรที่ผ่านมาได้ไหม?</div>
+    <div class="faq-a">ได้ครับ ไปที่ Dashboard → กดดู Duty เก่า → รูปยังอยู่ครบ สามารถกดดูเต็มจอได้เสมอ</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">❓ Checklist กด Save แล้วยังแก้ได้ไหม?</div>
+    <div class="faq-a">ได้ครับ แก้ได้ตลอดเวร จนกว่าระบบจะ Check-out อัตโนมัติเมื่อสิ้นสุดเวร หลังจากนั้นจะล็อคทันที</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">❓ Incident ที่ปิด (Closed) แล้วแก้ไขได้ไหม?</div>
+    <div class="faq-a">ไม่ได้ครับ สถานะ Closed จะล็อคการดำเนินการทั้งหมด</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">❓ ระบบรองรับมือถือไหม?</div>
+    <div class="faq-a">รองรับครับ เปิด Browser บนมือถือแล้วเข้า https://tk.pmk.ac.th/dutycheckin/ ได้เลย ทั้งหน้าลงเวรและ Dashboard รองรับหน้าจอมือถือ</div>
+  </div>
+
+  <div class="page-footer">
+    <span>ระบบลงเวร ศูนย์สารสนเทศ</span>
+    <span>บทที่ 10-11 • รหัสผ่าน & FAQ</span>
+  </div>
+</div>
+
+<!-- Print Button -->
+<button class="print-btn no-print" onclick="window.print()">
+  🖨️ บันทึกเป็น PDF
+</button>
+
+</body>
+</html>
