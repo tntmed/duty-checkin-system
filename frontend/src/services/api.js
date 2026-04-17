@@ -58,6 +58,7 @@ export const checkin = (data) => API.post('/duties/checkin', data)
 export const checkout = (dutyId) => API.post(`/duties/${dutyId}/checkout`)
 export const getDutiesToday = () => API.get('/duties/today')
 export const getDuty = (dutyId) => API.get(`/duties/${dutyId}`)
+export const getDutyAttachments = (dutyId) => API.get(`/duties/${dutyId}/attachments`)
 export const uploadDutyFile = (dutyId, formData) =>
   API.post(`/duties/${dutyId}/upload`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

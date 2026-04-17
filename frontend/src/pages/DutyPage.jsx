@@ -10,6 +10,7 @@ import {
   createIncident,
   updateIncident,
   uploadDutyFile,
+  getDutyAttachments,
   uploadChecklistFile,
   uploadIncidentFile,
   getIncidentAttachments,
@@ -249,8 +250,12 @@ export default function DutyPage() {
   const [expandedPhotos, setExpandedPhotos] = useState(new Set())
   const [lightboxUrl, setLightboxUrl] = useState(null)
 
+  // Duty attachments
+  const [dutyAttachments, setDutyAttachments] = useState([])
+  const [dutyLightboxUrl, setDutyLightboxUrl] = useState(null)
+
   // Upload state
-  const [dutyUploadFile, setDutyUploadFile] = useState(null)
+  const [dutyUploadFiles, setDutyUploadFiles] = useState([])
   const [dutyUploading, setDutyUploading] = useState(false)
 
   // Per-checklist-item upload
@@ -284,12 +289,14 @@ export default function DutyPage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [dutyRes, clRes, incRes, tlRes] = await Promise.all([
+      const [dutyRes, clRes, incRes, tlRes, dutyAttRes] = await Promise.all([
         getDuty(id),
         getChecklistLogs(id),
         getIncidents(id),
         API.get(`/duties/${id}/timeline`).catch(() => ({ data: { events: [] } })),
+        getDutyAttachments(id).catch(() => ({ data: [] })),
       ])
+      setDutyAttachments(dutyAttRes.data || [])
       setDuty(dutyRes.data)
       const logs = clRes.data || []
       setChecklistLogs(logs)
@@ -455,14 +462,18 @@ export default function DutyPage() {
   // File uploads
   // ============================================================
   const handleDutyUpload = async () => {
-    if (!dutyUploadFile) return
+    if (!dutyUploadFiles.length) return
     setDutyUploading(true)
     try {
-      const fd = new FormData()
-      fd.append('file', dutyUploadFile)
-      await uploadDutyFile(id, fd)
-      showSuccess('File uploaded successfully.')
-      setDutyUploadFile(null)
+      for (const file of dutyUploadFiles) {
+        const fd = new FormData()
+        fd.append('file', file)
+        await uploadDutyFile(id, fd)
+      }
+      showSuccess(`อัปโหลด ${dutyUploadFiles.length} รูปเรียบร้อยแล้ว`)
+      setDutyUploadFiles([])
+      const r = await getDutyAttachments(id)
+      setDutyAttachments(r.data || [])
     } catch (err) {
       showError(err.response?.data?.detail || 'Upload failed.')
     } finally {
@@ -1063,27 +1074,73 @@ export default function DutyPage() {
         ==================================================== */}
         <div style={s.card}>
           <div style={s.cardTitle}>
-            <span>Upload Duty Attachment</span>
+            <span>รูปภาพประกอบการเวร ({dutyAttachments.length} รูป)</span>
           </div>
+
+          {/* Gallery */}
+          {dutyAttachments.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '16px' }}>
+              {dutyAttachments.map((att) => {
+                const imgUrl = `${import.meta.env.VITE_API_URL || '/api'}/${att.file_path}`
+                return (
+                  <img
+                    key={att.id}
+                    src={imgUrl}
+                    alt={att.file_name}
+                    title={att.file_name}
+                    style={{
+                      width: '110px', height: '110px', objectFit: 'cover',
+                      borderRadius: '10px', cursor: 'pointer',
+                      border: '2px solid #e5e7eb',
+                      transition: 'border-color 0.15s',
+                    }}
+                    onClick={() => setDutyLightboxUrl(imgUrl)}
+                    onMouseOver={(e) => e.currentTarget.style.borderColor = '#1a73e8'}
+                    onMouseOut={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
+                  />
+                )
+              })}
+            </div>
+          )}
+
+          {/* Upload */}
           <div style={s.uploadRow}>
             <input
               type="file"
+              multiple
+              accept="image/*"
               style={s.fileInput}
-              onChange={(e) => setDutyUploadFile(e.target.files[0])}
+              onChange={(e) => setDutyUploadFiles(Array.from(e.target.files).slice(0, 8))}
             />
             <button
               style={{ ...s.btn, ...s.btnPrimary }}
               onClick={handleDutyUpload}
-              disabled={!dutyUploadFile || dutyUploading}
+              disabled={!dutyUploadFiles.length || dutyUploading}
             >
-              {dutyUploading ? 'Uploading...' : 'Upload File'}
+              {dutyUploading ? 'Uploading...' : 'Upload'}
             </button>
           </div>
-          <p style={{ fontSize: '12px', color: '#9ca3af', margin: '8px 0 0' }}>
-            Attach photos or documents related to this duty. Max file size: 10 MB.
+          {dutyUploadFiles.length > 0 && (
+            <p style={{ fontSize: '12px', color: '#374151', margin: '6px 0 0' }}>
+              เลือก {dutyUploadFiles.length} ไฟล์
+            </p>
+          )}
+          <p style={{ fontSize: '12px', color: '#9ca3af', margin: '6px 0 0' }}>
+            เลือกได้สูงสุด 8 รูป • รองรับ JPG, PNG • ขนาดไม่เกิน 10 MB ต่อรูป
           </p>
         </div>
       </div>
+
+      {/* ── Duty Lightbox ── */}
+      {dutyLightboxUrl && (
+        <div
+          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, cursor: 'zoom-out' }}
+          onClick={() => setDutyLightboxUrl(null)}
+        >
+          <img src={dutyLightboxUrl} style={{ maxWidth: '95vw', maxHeight: '90vh', borderRadius: '8px', objectFit: 'contain' }} onClick={(e) => e.stopPropagation()} />
+          <button style={{ position: 'absolute', top: '16px', right: '20px', background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', fontSize: '28px', cursor: 'pointer', borderRadius: '50%', width: '40px', height: '40px', lineHeight: '40px', textAlign: 'center' }} onClick={() => setDutyLightboxUrl(null)}>×</button>
+        </div>
+      )}
 
       {/* ── Lightbox ── */}
       {lightboxUrl && (

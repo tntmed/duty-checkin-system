@@ -143,6 +143,27 @@ def get_duty(
     return _build_duty_response(duty)
 
 
+@router.get("/{duty_id}/attachments", response_model=List[schemas.AttachmentResponse])
+def get_duty_attachments(
+    duty_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List all attachments for a duty."""
+    duty = crud.get_duty(db, duty_id=duty_id)
+    if not duty:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Duty not found")
+    return [
+        schemas.AttachmentResponse(
+            id=a.id, file_name=a.file_name, file_path=a.file_path,
+            file_size=a.file_size, mime_type=a.mime_type,
+            duty_id=a.duty_id, checklist_log_id=a.checklist_log_id,
+            incident_id=a.incident_id, uploaded_at=a.uploaded_at,
+        )
+        for a in duty.attachments
+    ]
+
+
 @router.post("/{duty_id}/upload", response_model=schemas.AttachmentResponse)
 async def upload_duty_file(
     duty_id: int,
