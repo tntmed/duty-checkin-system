@@ -79,6 +79,7 @@ export const uploadChecklistFile = (dutyId, checklistLogId, formData) =>
 export const createIncident = (dutyId, data) => API.post(`/duties/${dutyId}/incidents`, data)
 export const getIncidents = (dutyId) => API.get(`/duties/${dutyId}/incidents`)
 export const getIncident = (incidentId) => API.get(`/incidents/${incidentId}`)
+export const getIncidentAttachments = (incidentId) => API.get(`/incidents/${incidentId}/attachments`)
 export const updateIncident = (incidentId, data) => API.put(`/incidents/${incidentId}`, data)
 export const workflowIncident = (incidentId, data) => API.patch(`/incidents/${incidentId}/workflow`, data)
 export const uploadIncidentFile = (incidentId, formData) =>

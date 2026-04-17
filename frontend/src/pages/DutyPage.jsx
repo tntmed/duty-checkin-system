@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -12,6 +12,7 @@ import {
   uploadDutyFile,
   uploadChecklistFile,
   uploadIncidentFile,
+  getIncidentAttachments,
 } from '../services/api'
 import API from '../services/api'
 
@@ -243,6 +244,11 @@ export default function DutyPage() {
   const [editForm, setEditForm] = useState({ incident_type: 'ROUTINE', detail: '', impact: 'NONE' })
   const [editSaving, setEditSaving] = useState(false)
 
+  // Photo gallery state
+  const [incidentAttachments, setIncidentAttachments] = useState({}) // incidentId → []
+  const [expandedPhotos, setExpandedPhotos] = useState(new Set())
+  const [lightboxUrl, setLightboxUrl] = useState(null)
+
   // Upload state
   const [dutyUploadFile, setDutyUploadFile] = useState(null)
   const [dutyUploading, setDutyUploading] = useState(false)
@@ -293,8 +299,18 @@ export default function DutyPage() {
         edits[log.id] = { status: log.status || 'NA', remark: log.remark || '' }
       })
       setChecklistEdits(edits)
-      setIncidents(incRes.data || [])
+      const incList = incRes.data || []
+      setIncidents(incList)
       setTimeline(tlRes.data?.events || [])
+      // Load attachments for each incident
+      const attachMap = {}
+      await Promise.all(incList.map(async (inc) => {
+        try {
+          const r = await getIncidentAttachments(inc.id)
+          attachMap[inc.id] = r.data || []
+        } catch { attachMap[inc.id] = [] }
+      }))
+      setIncidentAttachments(attachMap)
     } catch (err) {
       showError('Failed to load duty data.')
     } finally {
@@ -472,15 +488,21 @@ export default function DutyPage() {
   }
 
   const handleIncidentUpload = async (incidentId) => {
-    const file = incidentUploadFiles[incidentId]
-    if (!file) return
+    const files = incidentUploadFiles[incidentId]
+    if (!files || files.length === 0) return
     setIncidentUploading((prev) => ({ ...prev, [incidentId]: true }))
     try {
-      const fd = new FormData()
-      fd.append('file', file)
-      await uploadIncidentFile(incidentId, fd)
-      showSuccess('File uploaded to incident.')
+      for (const file of files) {
+        const fd = new FormData()
+        fd.append('file', file)
+        await uploadIncidentFile(incidentId, fd)
+      }
+      showSuccess(`อัปโหลด ${files.length} รูปเรียบร้อยแล้ว`)
       setIncidentUploadFiles((prev) => ({ ...prev, [incidentId]: null }))
+      // Reload attachments for this incident
+      const r = await getIncidentAttachments(incidentId)
+      setIncidentAttachments((prev) => ({ ...prev, [incidentId]: r.data || [] }))
+      setExpandedPhotos((prev) => new Set([...prev, incidentId]))
     } catch (err) {
       showError(err.response?.data?.detail || 'Upload failed.')
     } finally {
@@ -859,7 +881,8 @@ export default function DutyPage() {
                 </thead>
                 <tbody>
                   {incidents.map((inc) => (
-                    <tr key={inc.id}>
+                    <React.Fragment key={inc.id}>
+                    <tr>
                       <td style={s.td}>{inc.id}</td>
                       <td style={s.td}>
                         <span style={{
@@ -874,12 +897,24 @@ export default function DutyPage() {
                         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }} title={inc.detail}>
                           {inc.detail}
                         </div>
-                        <button
-                          style={{ ...s.btn, backgroundColor: '#f59e0b', color: '#fff', fontSize: '11px', padding: '3px 8px', marginTop: '5px' }}
-                          onClick={() => handleOpenEdit(inc)}
-                        >
-                          ✏️ แก้ไข
-                        </button>
+                        <div style={{ display: 'flex', gap: '4px', marginTop: '5px', flexWrap: 'wrap' }}>
+                          <button
+                            style={{ ...s.btn, backgroundColor: '#f59e0b', color: '#fff', fontSize: '11px', padding: '3px 8px' }}
+                            onClick={() => handleOpenEdit(inc)}
+                          >
+                            ✏️ แก้ไข
+                          </button>
+                          <button
+                            style={{ ...s.btn, backgroundColor: '#6366f1', color: '#fff', fontSize: '11px', padding: '3px 8px' }}
+                            onClick={() => setExpandedPhotos((prev) => {
+                              const s = new Set(prev)
+                              s.has(inc.id) ? s.delete(inc.id) : s.add(inc.id)
+                              return s
+                            })}
+                          >
+                            🖼 {(incidentAttachments[inc.id] || []).length} รูป
+                          </button>
+                        </div>
                       </td>
                       <td style={s.td}><ImpactBadge impact={inc.impact} /></td>
                       <td style={s.td}><IncidentStatusBadge status={inc.status} /></td>
@@ -907,18 +942,58 @@ export default function DutyPage() {
                       <td style={s.td}>
                         <input
                           type="file"
+                          multiple
+                          accept="image/*"
                           style={{ ...s.fileInput, display: 'block', marginBottom: '4px' }}
-                          onChange={(e) => setIncidentUploadFiles((prev) => ({ ...prev, [inc.id]: e.target.files[0] }))}
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files).slice(0, 8)
+                            setIncidentUploadFiles((prev) => ({ ...prev, [inc.id]: files }))
+                          }}
                         />
+                        {incidentUploadFiles[inc.id]?.length > 0 && (
+                          <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '3px' }}>
+                            {incidentUploadFiles[inc.id].length} ไฟล์ที่เลือก
+                          </div>
+                        )}
                         <button
                           style={{ ...s.btn, ...s.btnGray, fontSize: '12px', padding: '4px 10px' }}
                           onClick={() => handleIncidentUpload(inc.id)}
-                          disabled={!incidentUploadFiles[inc.id] || incidentUploading[inc.id]}
+                          disabled={!incidentUploadFiles[inc.id]?.length || incidentUploading[inc.id]}
                         >
                           {incidentUploading[inc.id] ? 'Uploading...' : 'Upload'}
                         </button>
                       </td>
                     </tr>
+                    {expandedPhotos.has(inc.id) && (
+                      <tr key={`photos-${inc.id}`}>
+                        <td colSpan={8} style={{ padding: '12px 16px', backgroundColor: '#f8fafc', borderBottom: '1px solid #e5e7eb' }}>
+                          {(incidentAttachments[inc.id] || []).length === 0 ? (
+                            <div style={{ color: '#9ca3af', fontSize: '13px', fontStyle: 'italic' }}>ยังไม่มีรูปภาพ</div>
+                          ) : (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                              {(incidentAttachments[inc.id] || []).map((att) => {
+                                const imgUrl = `${import.meta.env.VITE_API_URL || '/api'}/${att.file_path}`
+                                return (
+                                  <img
+                                    key={att.id}
+                                    src={imgUrl}
+                                    alt={att.file_name}
+                                    title={att.file_name}
+                                    style={{
+                                      width: '90px', height: '90px', objectFit: 'cover',
+                                      borderRadius: '8px', cursor: 'pointer',
+                                      border: '2px solid #e5e7eb',
+                                    }}
+                                    onClick={() => setLightboxUrl(imgUrl)}
+                                  />
+                                )
+                              })}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
@@ -1009,6 +1084,33 @@ export default function DutyPage() {
           </p>
         </div>
       </div>
+
+      {/* ── Lightbox ── */}
+      {lightboxUrl && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 2000, cursor: 'zoom-out',
+          }}
+          onClick={() => setLightboxUrl(null)}
+        >
+          <img
+            src={lightboxUrl}
+            style={{ maxWidth: '95vw', maxHeight: '90vh', borderRadius: '8px', objectFit: 'contain' }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            style={{
+              position: 'absolute', top: '16px', right: '20px',
+              background: 'rgba(255,255,255,0.15)', border: 'none',
+              color: '#fff', fontSize: '28px', cursor: 'pointer', borderRadius: '50%',
+              width: '40px', height: '40px', lineHeight: '40px', textAlign: 'center',
+            }}
+            onClick={() => setLightboxUrl(null)}
+          >×</button>
+        </div>
+      )}
 
       {/* ── Edit Incident Modal ── */}
       {editingIncident && (

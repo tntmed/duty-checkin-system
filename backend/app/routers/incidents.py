@@ -148,6 +148,27 @@ def update_incident(
     return _build_incident_response(incident)
 
 
+@router.get("/incidents/{incident_id}/attachments", response_model=List[schemas.AttachmentResponse])
+def get_incident_attachments(
+    incident_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List all attachments for an incident."""
+    incident = crud.get_incident(db, incident_id=incident_id)
+    if not incident:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+    return [
+        schemas.AttachmentResponse(
+            id=a.id, file_name=a.file_name, file_path=a.file_path,
+            file_size=a.file_size, mime_type=a.mime_type,
+            duty_id=a.duty_id, checklist_log_id=a.checklist_log_id,
+            incident_id=a.incident_id, uploaded_at=a.uploaded_at,
+        )
+        for a in incident.attachments
+    ]
+
+
 @router.post("/incidents/{incident_id}/upload", response_model=schemas.AttachmentResponse)
 async def upload_incident_file(
     incident_id: int,
