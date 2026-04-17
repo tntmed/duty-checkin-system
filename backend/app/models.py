@@ -18,6 +18,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     email = Column(String(200), nullable=True)
     is_active = Column(Numeric(1), default=1, nullable=False)
+    is_admin = Column(Numeric(1), default=0, nullable=False)
     created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
     updated_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
 
@@ -142,6 +143,7 @@ class Incident(Base):
     reported_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
     resolved_at = Column(DateTime, nullable=True)
     assigned_to = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    assigned_to_external = Column(String(500), nullable=True)
     resolution_note = Column(String(2000), nullable=True)
 
     # Relationships

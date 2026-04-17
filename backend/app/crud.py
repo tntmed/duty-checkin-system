@@ -1,6 +1,11 @@
 """CRUD operations for the Duty Check-in System."""
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
 from typing import List, Optional
+
+_TZ_BANGKOK = timezone(timedelta(hours=7))
+
+def _now() -> datetime:
+    return datetime.now(_TZ_BANGKOK).replace(tzinfo=None)
 
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
@@ -130,6 +135,29 @@ def get_shift(db: Session, shift_id: int) -> Optional[models.DutyShift]:
 # Duty CRUD
 # ============================================================
 
+def _calc_checkout_time(duty_date: date, shift: models.DutyShift) -> datetime:
+    """คำนวณเวลา checkout จาก shift end_time (รองรับข้ามวัน)"""
+    def parse_hhmm(t: str):
+        h, m = map(int, t.split(':'))
+        return h, m
+
+    sh, sm = parse_hhmm(shift.start_time)
+    eh, em = parse_hhmm(shift.end_time)
+
+    start_minutes = sh * 60 + sm
+    end_minutes = eh * 60 + em
+
+    # ถ้า end <= start หรือ end == 0 (24:00) → ข้ามวัน
+    if end_minutes == 0 or end_minutes <= start_minutes:
+        checkout_date = duty_date + timedelta(days=1)
+        actual_eh = 0 if eh == 24 else eh
+    else:
+        checkout_date = duty_date
+        actual_eh = eh
+
+    return datetime.combine(checkout_date, datetime.min.time()).replace(hour=actual_eh, minute=em)
+
+
 def create_duty(db: Session, user_id: int, checkin_req: schemas.CheckinRequest) -> models.Duty:
     """
     Create a new duty record for today.
@@ -137,7 +165,7 @@ def create_duty(db: Session, user_id: int, checkin_req: schemas.CheckinRequest) 
     Raises ValueError if the user already checked in for the same role+shift today.
     """
     today = date.today()
-    now = datetime.utcnow()
+    now = _now()
 
     # Prevent duplicate check-in: same user + role + shift + date
     existing = (
@@ -153,12 +181,16 @@ def create_duty(db: Session, user_id: int, checkin_req: schemas.CheckinRequest) 
     if existing:
         raise ValueError(f"You have already checked in for this role and shift today (Duty #{existing.id}).")
 
+    shift = db.query(models.DutyShift).filter(models.DutyShift.id == checkin_req.shift_id).first()
+    auto_checkout = _calc_checkout_time(today, shift) if shift else None
+
     duty = models.Duty(
         user_id=user_id,
         role_id=checkin_req.role_id,
         shift_id=checkin_req.shift_id,
         duty_date=today,
         checkin_time=now,
+        checkout_time=auto_checkout,
         attendance_status="PRESENT",
         notes=checkin_req.notes,
     )
@@ -198,7 +230,7 @@ def checkout_duty(db: Session, duty_id: int, user_id: int) -> Optional[models.Du
     )
     if not duty:
         return None
-    duty.checkout_time = datetime.utcnow()
+    duty.checkout_time = _now()
     db.commit()
     db.refresh(duty)
     return duty
@@ -267,7 +299,7 @@ def upsert_checklist_log(
     if existing:
         existing.status = item.status.value if hasattr(item.status, "value") else item.status
         existing.remark = item.remark
-        existing.checked_at = datetime.utcnow()
+        existing.checked_at = _now()
         db.commit()
         db.refresh(existing)
         return existing
@@ -277,7 +309,7 @@ def upsert_checklist_log(
             template_id=item.template_id,
             status=item.status.value if hasattr(item.status, "value") else item.status,
             remark=item.remark,
-            checked_at=datetime.utcnow(),
+            checked_at=_now(),
         )
         db.add(log)
         db.commit()
@@ -301,7 +333,7 @@ def create_incident(
         detail=incident.detail,
         impact=incident.impact.value if hasattr(incident.impact, "value") else incident.impact,
         status="OPEN",
-        reported_at=datetime.utcnow(),
+        reported_at=_now(),
     )
     db.add(db_incident)
     db.commit()
@@ -345,7 +377,7 @@ def update_incident(
     elif update.status is not None:
         status_val = update.status.value if hasattr(update.status, "value") else update.status
         if status_val in ("RESOLVED", "CLOSED") and incident.resolved_at is None:
-            incident.resolved_at = datetime.utcnow()
+            incident.resolved_at = _now()
 
     db.commit()
     db.refresh(incident)
@@ -366,11 +398,14 @@ def workflow_update_incident(
         new_status = update.status.value if hasattr(update.status, "value") else update.status
         incident.status = new_status
         if new_status in ("RESOLVED", "CLOSED") and incident.resolved_at is None:
-            incident.resolved_at = datetime.utcnow()
+            incident.resolved_at = _now()
 
     # assigned_to: None means "don't touch", use sentinel to unassign
     if "assigned_to" in update.model_fields_set:
         incident.assigned_to = update.assigned_to
+
+    if update.assigned_to_external is not None:
+        incident.assigned_to_external = update.assigned_to_external
 
     if update.resolution_note is not None:
         incident.resolution_note = update.resolution_note

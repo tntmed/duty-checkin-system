@@ -18,6 +18,20 @@ from fastapi.security import HTTPBearer
 
 # Create tables and seed data on startup
 Base.metadata.create_all(bind=engine)
+
+# Migrate: add is_admin column if missing
+_migrations = [
+    "ALTER TABLE users ADD COLUMN is_admin NUMERIC(1) NOT NULL DEFAULT 0",
+    "ALTER TABLE incidents ADD COLUMN assigned_to_external VARCHAR(500)",
+]
+with engine.connect() as _conn:
+    for _sql in _migrations:
+        try:
+            _conn.execute(__import__('sqlalchemy').text(_sql))
+            _conn.commit()
+        except Exception:
+            pass
+
 _db = SessionLocal()
 try:
     seed(_db)

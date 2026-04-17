@@ -17,6 +17,12 @@ from .auth import get_current_user
 router = APIRouter()
 
 
+def require_admin(current_user: models.User = Depends(get_current_user)) -> models.User:
+    if not int(current_user.is_admin):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
+    return current_user
+
+
 def _build_user_response(user: models.User, roles: list) -> schemas.UserResponse:
     """Helper to build a UserResponse with roles."""
     return schemas.UserResponse(
@@ -69,11 +75,25 @@ def get_my_roles(
     ]
 
 
+@router.get("/assignable", response_model=List[schemas.UserResponse])
+def list_assignable_users(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return active users for assignment dropdowns (no admin required)."""
+    users = crud.get_users(db, skip=0, limit=500)
+    result = []
+    for user in users:
+        roles = crud.get_user_roles(db, user.id)
+        result.append(_build_user_response(user, roles))
+    return result
+
+
 @router.get("/", response_model=List[schemas.UserResponse])
 def list_users(
     skip: int = 0,
     limit: int = 100,
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """List all users (admin endpoint)."""
@@ -88,7 +108,7 @@ def list_users(
 @router.post("/", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(
     user_in: schemas.UserCreate,
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Create a new user."""
@@ -104,7 +124,7 @@ def create_user(
 
 @router.get("/import/template")
 def download_import_template(
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Download an Excel template for bulk user import."""
@@ -162,7 +182,7 @@ def download_import_template(
 @router.post("/import/excel")
 def import_users_from_excel(
     file: UploadFile = File(...),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Import users from an uploaded Excel file."""
@@ -240,7 +260,7 @@ def import_users_from_excel(
 @router.post("/{user_id}/reset-password")
 def admin_reset_password(
     user_id: int,
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Admin resets a user's password to a random temporary password."""
@@ -260,7 +280,7 @@ def admin_reset_password(
 @router.patch("/{user_id}/toggle-active")
 def toggle_user_active(
     user_id: int,
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Toggle a user's active status."""
@@ -278,7 +298,7 @@ def toggle_user_active(
 def assign_role(
     user_id: int,
     role_id: int,
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Assign a role to a user."""

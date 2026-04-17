@@ -30,6 +30,7 @@ def _build_incident_response(incident: models.Incident) -> schemas.IncidentRespo
         resolved_at=incident.resolved_at,
         assigned_to=incident.assigned_to,
         assigned_to_name=incident.assignee.full_name if incident.assignee else None,
+        assigned_to_external=incident.assigned_to_external,
         resolution_note=incident.resolution_note,
     )
 

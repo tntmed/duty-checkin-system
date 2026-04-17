@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getIncident, workflowIncident, getUsers } from '../services/api'
+import { getIncident, workflowIncident } from '../services/api'
 
 // ── Status config ──────────────────────────────────────────────
 const STATUS_CONFIG = {
-  OPEN:        { bg: '#fee2e2', color: '#dc2626', label: 'Open' },
-  IN_PROGRESS: { bg: '#fef9c3', color: '#ca8a04', label: 'In Progress' },
-  RESOLVED:    { bg: '#dcfce7', color: '#16a34a', label: 'Resolved' },
-  CLOSED:      { bg: '#f3f4f6', color: '#6b7280', label: 'Closed' },
+  OPEN:        { bg: '#fee2e2', color: '#dc2626', label: 'เปิด' },
+  IN_PROGRESS: { bg: '#fef9c3', color: '#ca8a04', label: 'กำลังดำเนินการ' },
+  RESOLVED:    { bg: '#dcfce7', color: '#16a34a', label: 'แก้ไขแล้ว' },
+  CLOSED:      { bg: '#f3f4f6', color: '#6b7280', label: 'ปิด' },
 }
 
 const IMPACT_CONFIG = {
@@ -19,14 +19,14 @@ const IMPACT_CONFIG = {
 
 // OPEN → IN_PROGRESS → RESOLVED → CLOSED
 const NEXT_TRANSITIONS = {
-  OPEN:        [{ to: 'IN_PROGRESS', label: '▶ Start Progress', color: '#ca8a04' }],
+  OPEN:        [{ to: 'IN_PROGRESS', label: '▶ เริ่มดำเนินการ', color: '#ca8a04' }],
   IN_PROGRESS: [
-    { to: 'RESOLVED', label: '✓ Mark Resolved', color: '#16a34a' },
-    { to: 'OPEN',     label: '↩ Re-open',       color: '#6b7280' },
+    { to: 'RESOLVED', label: '✓ แก้ไขเสร็จแล้ว', color: '#16a34a' },
+    { to: 'OPEN',     label: '↩ เปิดใหม่',        color: '#6b7280' },
   ],
   RESOLVED:    [
-    { to: 'CLOSED',      label: '🔒 Close',          color: '#374151' },
-    { to: 'IN_PROGRESS', label: '↩ Re-open',          color: '#6b7280' },
+    { to: 'CLOSED',      label: '🔒 ปิดเรื่อง',      color: '#374151' },
+    { to: 'IN_PROGRESS', label: '↩ เปิดใหม่',        color: '#6b7280' },
   ],
   CLOSED:      [],
 }
@@ -113,8 +113,7 @@ export default function IncidentDetailPage() {
   const navigate = useNavigate()
 
   const [incident, setIncident] = useState(null)
-  const [users, setUsers] = useState([])
-  const [assignTo, setAssignTo] = useState('')
+  const [assignToExternal, setAssignToExternal] = useState('')
   const [resolutionNote, setResolutionNote] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -122,16 +121,15 @@ export default function IncidentDetailPage() {
   const [successMsg, setSuccessMsg] = useState('')
 
   useEffect(() => {
-    Promise.all([
-      getIncident(incidentId),
-      getUsers(),
-    ]).then(([incRes, usersRes]) => {
-      const inc = incRes.data
-      setIncident(inc)
-      setAssignTo(inc.assigned_to ? String(inc.assigned_to) : '')
-      setResolutionNote(inc.resolution_note || '')
-      setUsers(usersRes.data)
-    }).catch(() => setError('Failed to load incident.')).finally(() => setLoading(false))
+    getIncident(incidentId)
+      .then((incRes) => {
+        const inc = incRes.data
+        setIncident(inc)
+        setAssignToExternal(inc.assigned_to_external || '')
+        setResolutionNote(inc.resolution_note || '')
+      })
+      .catch(() => setError('Failed to load incident.'))
+      .finally(() => setLoading(false))
   }, [incidentId])
 
   const applyWorkflow = async (newStatus) => {
@@ -141,13 +139,13 @@ export default function IncidentDetailPage() {
     try {
       const payload = {}
       if (newStatus) payload.status = newStatus
-      if (assignTo !== '') payload.assigned_to = parseInt(assignTo) || null
-      else payload.assigned_to = null
+      if (assignToExternal.trim()) payload.assigned_to_external = assignToExternal.trim()
       if (resolutionNote.trim()) payload.resolution_note = resolutionNote.trim()
 
       const res = await workflowIncident(incidentId, payload)
       setIncident(res.data)
-      setSuccessMsg(`Status updated to ${res.data.status}`)
+      const statusTh = { OPEN: 'เปิด', IN_PROGRESS: 'กำลังดำเนินการ', RESOLVED: 'แก้ไขแล้ว', CLOSED: 'ปิด' }
+      setSuccessMsg(`อัปเดตสถานะเป็น: ${statusTh[res.data.status] || res.data.status}`)
     } catch (err) {
       setError(err.response?.data?.detail || 'Update failed.')
     } finally {
@@ -157,7 +155,7 @@ export default function IncidentDetailPage() {
 
   const handleSaveDetails = async () => {
     await applyWorkflow(null)
-    setSuccessMsg('Details saved.')
+    setSuccessMsg('บันทึกข้อมูลเรียบร้อย')
   }
 
   if (loading) return (
@@ -173,7 +171,7 @@ export default function IncidentDetailPage() {
         <button style={s.backBtn} onClick={() => navigate(-1)}>← Back</button>
         <h1 style={s.navTitle}>Incident not found</h1>
       </nav>
-      <div style={{ ...s.loading, color: '#dc2626' }}>Incident #{incidentId} not found.</div>
+      <div style={{ ...s.loading, color: '#dc2626' }}>ไม่พบ Incident #{incidentId}</div>
     </div>
   )
 
@@ -196,7 +194,7 @@ export default function IncidentDetailPage() {
         {/* ── Overview card ── */}
         <div style={s.card}>
           <div style={s.cardHeader}>
-            <h3 style={s.cardTitle}>Incident Overview</h3>
+            <h3 style={s.cardTitle}>ภาพรวม Incident</h3>
             <div style={{ display: 'flex', gap: '8px' }}>
               <span style={{ ...s.badge, backgroundColor: impactCfg.bg, color: impactCfg.color }}>{incident.impact}</span>
               <span style={{ ...s.badge, backgroundColor: statusCfg.bg, color: statusCfg.color }}>{statusCfg.label}</span>
@@ -205,40 +203,40 @@ export default function IncidentDetailPage() {
           <div style={s.cardBody}>
             <div style={s.metaGrid}>
               <div style={s.metaItem}>
-                <div style={s.metaLabel}>Type</div>
+                <div style={s.metaLabel}>ประเภท</div>
                 <div style={s.metaValue}>{incident.incident_type}</div>
               </div>
               <div style={s.metaItem}>
-                <div style={s.metaLabel}>Duty</div>
+                <div style={s.metaLabel}>เวร</div>
                 <div style={s.metaValue}>
                   <span
                     style={{ color: '#1a73e8', cursor: 'pointer', textDecoration: 'underline' }}
                     onClick={() => navigate(`/duty/${incident.duty_id}`)}
                   >
-                    Duty #{incident.duty_id}
+                    เวร #{incident.duty_id}
                   </span>
                 </div>
               </div>
               <div style={s.metaItem}>
-                <div style={s.metaLabel}>Reported At</div>
+                <div style={s.metaLabel}>เวลารายงาน</div>
                 <div style={s.metaValue}>{fmt(incident.reported_at)}</div>
               </div>
               <div style={s.metaItem}>
-                <div style={s.metaLabel}>Resolved At</div>
+                <div style={s.metaLabel}>เวลาแก้ไข</div>
                 <div style={s.metaValue}>{fmt(incident.resolved_at)}</div>
               </div>
               <div style={{ ...s.metaItem, gridColumn: '1 / -1' }}>
-                <div style={s.metaLabel}>Assigned To</div>
-                <div style={s.metaValue}>{incident.assigned_to_name || '— Unassigned'}</div>
+                <div style={s.metaLabel}>มอบหมายให้ (Outsource)</div>
+                <div style={s.metaValue}>{incident.assigned_to_external || '— ยังไม่ได้มอบหมาย'}</div>
               </div>
             </div>
 
-            <div style={s.metaLabel}>Detail</div>
+            <div style={s.metaLabel}>รายละเอียด</div>
             <div style={s.detailText}>{incident.detail}</div>
 
             {incident.resolution_note && (
               <>
-                <div style={s.metaLabel}>Resolution Note</div>
+                <div style={s.metaLabel}>หมายเหตุการแก้ไข</div>
                 <div style={{ ...s.detailText, borderLeft: '3px solid #16a34a' }}>{incident.resolution_note}</div>
               </>
             )}
@@ -249,29 +247,24 @@ export default function IncidentDetailPage() {
         {incident.status !== 'CLOSED' && (
           <div style={s.card}>
             <div style={s.cardHeader}>
-              <h3 style={s.cardTitle}>Workflow Actions</h3>
+              <h3 style={s.cardTitle}>การดำเนินการ</h3>
             </div>
             <div style={s.cardBody}>
-              {/* Assign to */}
-              <label style={s.sectionLabel}>Assign To</label>
-              <select
+              {/* Assign to outsource */}
+              <label style={s.sectionLabel}>มอบหมายให้ (Outsource / บริษัทภายนอก)</label>
+              <input
+                type="text"
                 style={{ ...s.select, marginBottom: '14px' }}
-                value={assignTo}
-                onChange={(e) => setAssignTo(e.target.value)}
-              >
-                <option value="">— Unassigned</option>
-                {users.map((u) => (
-                  <option key={u.id} value={String(u.id)}>
-                    {u.full_name} ({u.employee_code})
-                  </option>
-                ))}
-              </select>
+                placeholder="เช่น บริษัท ABC จำกัด, ช่าง กฟน."
+                value={assignToExternal}
+                onChange={(e) => setAssignToExternal(e.target.value)}
+              />
 
               {/* Resolution note */}
-              <label style={s.sectionLabel}>Resolution Note</label>
+              <label style={s.sectionLabel}>หมายเหตุการแก้ไข</label>
               <textarea
                 style={{ ...s.textarea, marginBottom: '18px' }}
-                placeholder="Describe what was done to resolve this incident..."
+                placeholder="อธิบายวิธีการแก้ไข..."
                 value={resolutionNote}
                 onChange={(e) => setResolutionNote(e.target.value)}
               />
@@ -283,7 +276,7 @@ export default function IncidentDetailPage() {
                   onClick={handleSaveDetails}
                   disabled={saving}
                 >
-                  {saving ? 'Saving...' : 'Save Details'}
+                  {saving ? 'กำลังบันทึก...' : 'บันทึก'}
                 </button>
 
                 {transitions.map((t) => (
@@ -306,7 +299,7 @@ export default function IncidentDetailPage() {
         {incident.status === 'CLOSED' && (
           <div style={{ ...s.card, border: '1.5px solid #e5e7eb' }}>
             <div style={{ ...s.cardBody, color: '#6b7280', textAlign: 'center', fontSize: '14px' }}>
-              🔒 This incident is closed. No further actions available.
+              🔒 Incident นี้ถูกปิดแล้ว ไม่สามารถดำเนินการเพิ่มเติมได้
             </div>
           </div>
         )}

@@ -394,6 +394,49 @@ def export_dashboard_csv(
             cell.fill = fill
             cell.alignment = Alignment(vertical="center")
 
+    # Sheet 2: Incidents
+    ws2 = wb.create_sheet("Incidents")
+    inc_headers = [
+        ("ลำดับ", 8), ("วันที่เวร", 14), ("ชื่อผู้เวร", 28), ("ตำแหน่ง/Role", 20),
+        ("ประเภท Incident", 20), ("ความรุนแรง", 16), ("รายละเอียด", 50),
+        ("สถานะ", 14), ("เวลารายงาน", 20), ("เวลาแก้ไข", 20), ("หมายเหตุการแก้ไข", 40),
+    ]
+    for col, (h, w) in enumerate(inc_headers, 1):
+        cell = ws2.cell(row=1, column=col, value=h)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = center
+        cell.border = border
+        ws2.column_dimensions[cell.column_letter].width = w
+    ws2.row_dimensions[1].height = 22
+
+    inc_row = 2
+    impact_th = {"NONE": "ไม่มี", "MINOR": "น้อย", "MAJOR": "ปานกลาง", "CRITICAL": "วิกฤต"}
+    inc_status_th = {"OPEN": "เปิด", "IN_PROGRESS": "กำลังดำเนินการ", "RESOLVED": "แก้ไขแล้ว", "CLOSED": "ปิด"}
+    for duty in duties:
+        for inc in duty.incidents:
+            bg = "FFFFFF" if inc_row % 2 == 0 else "FFF8F0"
+            fill2 = PatternFill(start_color=bg, end_color=bg, fill_type="solid")
+            row_data = [
+                inc_row - 1,
+                str(duty.duty_date),
+                duty.user.full_name,
+                duty.role.name,
+                inc.incident_type,
+                impact_th.get(inc.impact, inc.impact),
+                str(inc.detail),
+                inc_status_th.get(inc.status, inc.status),
+                inc.reported_at.strftime("%d/%m/%Y %H:%M") if inc.reported_at else "",
+                inc.resolved_at.strftime("%d/%m/%Y %H:%M") if inc.resolved_at else "",
+                inc.resolution_note or "",
+            ]
+            for col, val in enumerate(row_data, 1):
+                cell = ws2.cell(row=inc_row, column=col, value=val)
+                cell.border = border
+                cell.fill = fill2
+                cell.alignment = Alignment(vertical="center", wrap_text=True)
+            inc_row += 1
+
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)

@@ -84,6 +84,7 @@ class UserResponse(UserBase):
 
     id: int
     is_active: int
+    is_admin: int = 0
     created_at: datetime
     updated_at: datetime
     roles: List[RoleResponse] = []
@@ -220,7 +221,8 @@ class IncidentUpdate(BaseModel):
 class IncidentWorkflowUpdate(BaseModel):
     """Dedicated schema for workflow transitions: status, assign, resolution note."""
     status: Optional[IncidentStatus] = None
-    assigned_to: Optional[int] = None   # user_id; send null to unassign
+    assigned_to: Optional[int] = None
+    assigned_to_external: Optional[str] = None
     resolution_note: Optional[str] = None
 
 
@@ -237,6 +239,7 @@ class IncidentResponse(BaseModel):
     resolved_at: Optional[datetime] = None
     assigned_to: Optional[int] = None
     assigned_to_name: Optional[str] = None
+    assigned_to_external: Optional[str] = None
     resolution_note: Optional[str] = None
 
 

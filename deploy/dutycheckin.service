@@ -1,0 +1,14 @@
+[Unit]
+Description=Duty Check-in System Backend
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/opt/dutycheckin/backend
+ExecStart=/opt/dutycheckin/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8001
+Restart=always
+RestartSec=5
+Environment="PYTHONPATH=/opt/dutycheckin/backend"
+
+[Install]
+WantedBy=multi-user.target

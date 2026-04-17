@@ -676,21 +676,6 @@ export default function DutyPage() {
                       style={s.remarkInput}
                       rows={2}
                     />
-                    {/* Per-item upload */}
-                    <div style={s.uploadRow}>
-                      <input
-                        type="file"
-                        style={s.fileInput}
-                        onChange={(e) => setChecklistUploadFiles((prev) => ({ ...prev, [log.id]: e.target.files[0] }))}
-                      />
-                      <button
-                        style={{ ...s.btn, ...s.btnPrimary, fontSize: '12px', padding: '5px 12px' }}
-                        onClick={() => handleChecklistUpload(log.id)}
-                        disabled={!checklistUploadFiles[log.id] || checklistUploading[log.id]}
-                      >
-                        {checklistUploading[log.id] ? 'Uploading...' : 'Upload'}
-                      </button>
-                    </div>
                   </div>
 
                   <div style={s.statusBtns}>

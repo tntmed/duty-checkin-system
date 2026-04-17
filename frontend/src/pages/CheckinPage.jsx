@@ -3,6 +3,26 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getRoles, getShifts, getDutiesToday, checkin } from '../services/api'
 
+// mapping: role name → shift names ที่อนุญาต
+const ROLE_SHIFT_MAP = {
+  'สิบเวร':         ['เวรวันราชการ', 'วันหยุด'],
+  'ผู้ช่วยสิบเวร':  ['เวรวันราชการ', 'วันหยุด'],
+  'โปรแกรมเมอร์':  ['เวรวันราชการ', 'วันหยุด'],
+  'ช่าง':           ['วันราชการ', 'วันราชการ กลางคืน', 'วันหยุด รอบเช้า', 'วันหยุด รอบค่ำ'],
+  'เวรนอกเวลา':    ['เวรนอกเวลา วันราชการ', 'เวรนอกเวลา วันหยุด'],
+}
+
+const SHIFT_COLORS = {
+  'เวรนอกเวลา วันราชการ': { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
+  'เวรนอกเวลา วันหยุด':   { bg: '#ffedd5', border: '#f97316', text: '#9a3412' },
+  'วันราชการ':             { bg: '#ede9fe', border: '#7c3aed', text: '#4c1d95' },
+  'เวรวันราชการ':          { bg: '#e0f2fe', border: '#0284c7', text: '#0c4a6e' },
+  'วันหยุด':               { bg: '#dcfce7', border: '#16a34a', text: '#14532d' },
+  'วันราชการ กลางคืน':     { bg: '#e0e7ff', border: '#4338ca', text: '#312e81' },
+  'วันหยุด รอบเช้า':        { bg: '#fef9c3', border: '#ca8a04', text: '#713f12' },
+  'วันหยุด รอบค่ำ':         { bg: '#fce7f3', border: '#db2777', text: '#831843' },
+}
+
 const styles = {
   page: {
     minHeight: '100vh',
@@ -223,8 +243,12 @@ export default function CheckinPage() {
       setShifts(shiftsData)
       setActiveDuties(dutiesData)
 
-      if (rolesData.length > 0) setSelectedRole(String(rolesData[0].id))
-      if (shiftsData.length > 0) setSelectedShift(String(shiftsData[0].id))
+      if (rolesData.length > 0) {
+        setSelectedRole(String(rolesData[0].id))
+        const allowed = ROLE_SHIFT_MAP[rolesData[0].name] || []
+        const filtered = shiftsData.filter(s => allowed.includes(s.name))
+        if (filtered.length > 0) setSelectedShift(String(filtered[0].id))
+      }
     } catch (err) {
       setError('Failed to load data. Please refresh the page.')
     } finally {
@@ -363,7 +387,14 @@ export default function CheckinPage() {
                 <select
                   style={styles.select}
                   value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
+                  onChange={(e) => {
+                    const roleId = e.target.value
+                    setSelectedRole(roleId)
+                    const roleName = roles.find(r => String(r.id) === roleId)?.name || ''
+                    const allowed = ROLE_SHIFT_MAP[roleName] || []
+                    const filtered = shifts.filter(s => allowed.includes(s.name))
+                    setSelectedShift(filtered.length > 0 ? String(filtered[0].id) : '')
+                  }}
                   required
                 >
                   {roles.length === 0 && (
@@ -374,26 +405,53 @@ export default function CheckinPage() {
                       {r.name}
                     </option>
                   ))}
+
                 </select>
               </div>
 
               <div style={styles.formGroup}>
                 <label style={styles.label}>Shift</label>
-                <select
-                  style={styles.select}
-                  value={selectedShift}
-                  onChange={(e) => setSelectedShift(e.target.value)}
-                  required
-                >
-                  {shifts.length === 0 && (
-                    <option value="">No shifts available</option>
-                  )}
-                  {shifts.map((s) => (
-                    <option key={s.id} value={String(s.id)}>
-                      {s.name} ({s.start_time} - {s.end_time})
-                    </option>
-                  ))}
-                </select>
+                {(() => {
+                  const roleName = roles.find(r => String(r.id) === selectedRole)?.name || ''
+                  const allowed = ROLE_SHIFT_MAP[roleName] || []
+                  const filtered = shifts.filter(s => allowed.includes(s.name))
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {filtered.length === 0 && (
+                        <div style={{ color: '#9ca3af', fontSize: '14px' }}>ไม่มีเวรสำหรับ role นี้</div>
+                      )}
+                      {filtered.map((s) => {
+                        const c = SHIFT_COLORS[s.name] || { bg: '#f3f4f6', border: '#d1d5db', text: '#374151' }
+                        const isSelected = selectedShift === String(s.id)
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => setSelectedShift(String(s.id))}
+                            style={{
+                              backgroundColor: c.bg,
+                              border: `2px solid ${isSelected ? c.border : '#e5e7eb'}`,
+                              color: c.text,
+                              borderRadius: '8px',
+                              padding: '10px 16px',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontWeight: isSelected ? '700' : '500',
+                              fontSize: '14px',
+                              boxShadow: isSelected ? `0 0 0 3px ${c.border}40` : 'none',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            {isSelected ? '✓ ' : ''}{s.name.replace(/^เวรนอกเวลา\s*/, '')}
+                            <span style={{ marginLeft: '8px', fontSize: '12px', opacity: 0.75 }}>
+                              ({s.start_time} - {s.end_time})
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
               </div>
 
               <button

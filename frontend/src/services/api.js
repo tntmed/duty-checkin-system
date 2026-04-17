@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const API = axios.create({
-  baseURL: 'http://localhost:8001',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -26,7 +26,7 @@ API.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      window.location.href = '/login'
+      window.location.href = (import.meta.env.VITE_BASE_PATH || '') + '/login'
     }
     return Promise.reject(error)
   }
@@ -42,6 +42,7 @@ export const loginApi = (data) => API.post('/auth/login', data)
 // ============================================================
 export const getCurrentUser = () => API.get('/users/me')
 export const getUserRoles = () => API.get('/users/me/roles')
+export const getAssignableUsers = () => API.get('/users/assignable')
 
 // ============================================================
 // Roles & Shifts

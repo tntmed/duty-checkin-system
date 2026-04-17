@@ -17,6 +17,14 @@ function ProtectedRoute({ children }) {
   return user ? children : <Navigate to="/login" replace />
 }
 
+function AdminRoute({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>
+  if (!user) return <Navigate to="/login" replace />
+  if (!user.is_admin) return <Navigate to="/checkin" replace />
+  return children
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -39,9 +47,9 @@ function AppRoutes() {
       />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/incidents/:incidentId" element={<ProtectedRoute><IncidentDetailPage /></ProtectedRoute>} />
-      <Route path="/import-users" element={<ProtectedRoute><ImportUsersPage /></ProtectedRoute>} />
+      <Route path="/import-users" element={<AdminRoute><ImportUsersPage /></AdminRoute>} />
       <Route path="/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
-      <Route path="/admin/users" element={<ProtectedRoute><AdminUsersPage /></ProtectedRoute>} />
+      <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="*" element={<Navigate to="/checkin" replace />} />
