@@ -366,6 +366,8 @@ def update_incident(
     if not incident:
         return None
 
+    if update.incident_type is not None:
+        incident.incident_type = update.incident_type.value if hasattr(update.incident_type, "value") else update.incident_type
     if update.status is not None:
         incident.status = update.status.value if hasattr(update.status, "value") else update.status
     if update.detail is not None:

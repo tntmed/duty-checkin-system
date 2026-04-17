@@ -238,6 +238,11 @@ export default function DutyPage() {
   // Incident status update state: map of incident.id -> new status value
   const [incidentStatusEdits, setIncidentStatusEdits] = useState({})
 
+  // Incident edit modal state
+  const [editingIncident, setEditingIncident] = useState(null)
+  const [editForm, setEditForm] = useState({ incident_type: 'ROUTINE', detail: '', impact: 'NONE' })
+  const [editSaving, setEditSaving] = useState(false)
+
   // Upload state
   const [dutyUploadFile, setDutyUploadFile] = useState(null)
   const [dutyUploading, setDutyUploading] = useState(false)
@@ -407,6 +412,26 @@ export default function DutyPage() {
       loadData()
     } catch (err) {
       showError(err.response?.data?.detail || 'Failed to update incident.')
+    }
+  }
+
+  const handleOpenEdit = (inc) => {
+    setEditForm({ incident_type: inc.incident_type, detail: inc.detail, impact: inc.impact })
+    setEditingIncident(inc)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editForm.detail.trim()) { showError('กรุณากรอกรายละเอียด incident'); return }
+    setEditSaving(true)
+    try {
+      await updateIncident(editingIncident.id, editForm)
+      showSuccess('แก้ไข incident เรียบร้อยแล้ว')
+      setEditingIncident(null)
+      loadData()
+    } catch (err) {
+      showError(err.response?.data?.detail || 'Failed to update incident.')
+    } finally {
+      setEditSaving(false)
     }
   }
 
@@ -830,7 +855,6 @@ export default function DutyPage() {
                     <th style={s.th}>Reported At</th>
                     <th style={s.th}>Update Status</th>
                     <th style={s.th}>Upload</th>
-                    <th style={s.th}>Workflow</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -847,9 +871,15 @@ export default function DutyPage() {
                         </span>
                       </td>
                       <td style={{ ...s.td, maxWidth: '220px' }}>
-                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '220px' }} title={inc.detail}>
+                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }} title={inc.detail}>
                           {inc.detail}
                         </div>
+                        <button
+                          style={{ ...s.btn, backgroundColor: '#f59e0b', color: '#fff', fontSize: '11px', padding: '3px 8px', marginTop: '5px' }}
+                          onClick={() => handleOpenEdit(inc)}
+                        >
+                          ✏️ แก้ไข
+                        </button>
                       </td>
                       <td style={s.td}><ImpactBadge impact={inc.impact} /></td>
                       <td style={s.td}><IncidentStatusBadge status={inc.status} /></td>
@@ -886,14 +916,6 @@ export default function DutyPage() {
                           disabled={!incidentUploadFiles[inc.id] || incidentUploading[inc.id]}
                         >
                           {incidentUploading[inc.id] ? 'Uploading...' : 'Upload'}
-                        </button>
-                      </td>
-                      <td style={s.td}>
-                        <button
-                          style={{ ...s.btn, ...s.btnPrimary, fontSize: '12px', padding: '5px 12px' }}
-                          onClick={() => navigate(`/incidents/${inc.id}`)}
-                        >
-                          Manage →
                         </button>
                       </td>
                     </tr>
@@ -987,6 +1009,79 @@ export default function DutyPage() {
           </p>
         </div>
       </div>
+
+      {/* ── Edit Incident Modal ── */}
+      {editingIncident && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+        }}
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingIncident(null) }}
+        >
+          <div style={{
+            backgroundColor: '#fff', borderRadius: '14px', padding: '28px',
+            width: '100%', maxWidth: '480px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          }}>
+            <h3 style={{ margin: '0 0 20px', fontSize: '16px', color: '#1a1a2e' }}>
+              แก้ไข Incident #{editingIncident.id}
+            </h3>
+
+            <div style={s.formGroup}>
+              <label style={s.label}>Incident Type</label>
+              <select
+                style={s.select}
+                value={editForm.incident_type}
+                onChange={(e) => setEditForm((p) => ({ ...p, incident_type: e.target.value }))}
+              >
+                <option value="ROUTINE">Routine</option>
+                <option value="INCIDENT">Incident</option>
+                <option value="MAINTENANCE">Maintenance</option>
+              </select>
+            </div>
+
+            <div style={s.formGroup}>
+              <label style={s.label}>Impact Level</label>
+              <select
+                style={s.select}
+                value={editForm.impact}
+                onChange={(e) => setEditForm((p) => ({ ...p, impact: e.target.value }))}
+              >
+                <option value="NONE">None</option>
+                <option value="MINOR">Minor</option>
+                <option value="MAJOR">Major</option>
+                <option value="CRITICAL">Critical</option>
+              </select>
+            </div>
+
+            <div style={s.formGroup}>
+              <label style={s.label}>Detail <span style={{ color: '#dc2626' }}>*</span></label>
+              <textarea
+                style={s.textarea}
+                value={editForm.detail}
+                onChange={(e) => setEditForm((p) => ({ ...p, detail: e.target.value }))}
+                rows={4}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '4px' }}>
+              <button
+                style={{ ...s.btn, ...s.btnOutline }}
+                onClick={() => setEditingIncident(null)}
+                disabled={editSaving}
+              >
+                ยกเลิก
+              </button>
+              <button
+                style={{ ...s.btn, ...s.btnSuccess }}
+                onClick={handleSaveEdit}
+                disabled={editSaving}
+              >
+                {editSaving ? 'กำลังบันทึก...' : 'บันทึก'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

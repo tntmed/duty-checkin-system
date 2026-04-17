@@ -212,6 +212,7 @@ class IncidentCreate(BaseModel):
 
 
 class IncidentUpdate(BaseModel):
+    incident_type: Optional[IncidentType] = None
     status: Optional[IncidentStatus] = None
     detail: Optional[str] = None
     impact: Optional[ImpactLevel] = None
