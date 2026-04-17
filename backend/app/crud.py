@@ -249,9 +249,16 @@ def get_duties_today(db: Session, user_id: int) -> List[models.Duty]:
 def get_duty(db: Session, duty_id: int) -> Optional[models.Duty]:
     """Fetch a duty by primary key. Auto-checkout if shift end time has passed."""
     duty = db.query(models.Duty).filter(models.Duty.id == duty_id).first()
-    if duty and duty.checkout_time is None and duty.shift:
+    if duty and duty.shift:
         expected_checkout = _calc_checkout_time(duty.duty_date, duty.shift)
-        if _now() >= expected_checkout:
+        now = _now()
+        if duty.checkout_time is not None and duty.checkout_time > now:
+            # Clear future checkout_time left by old auto-checkout logic
+            duty.checkout_time = None
+            db.commit()
+            db.refresh(duty)
+        elif duty.checkout_time is None and now >= expected_checkout:
+            # Auto-checkout when shift end time has passed
             duty.checkout_time = expected_checkout
             db.commit()
             db.refresh(duty)
