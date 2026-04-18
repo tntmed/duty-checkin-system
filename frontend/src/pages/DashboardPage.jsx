@@ -320,6 +320,9 @@ export default function DashboardPage() {
     user?.roles?.some(r => r.name === 'สิบเวร') ||
     duties.some(d => d.user_id === user?.id && d.role_name === 'สิบเวร')
 
+  // สิบเวร cannot confirm their own duty
+  const canConfirmDuty = (duty) => canConfirm && duty.user_id !== user?.id
+
   const openConfirmModal = (duty, e) => {
     e.stopPropagation()
     setConfirmStatus(duty.attendance_status || 'PRESENT')
@@ -637,7 +640,7 @@ export default function DashboardPage() {
                       </span>
                     )}
                   </div>
-                  {canConfirm && (
+                  {canConfirmDuty(duty) && (
                     <div style={{ marginTop: '10px' }}>
                       <button
                         style={{ fontSize: '13px', padding: '6px 18px', backgroundColor: '#1a73e8', color: '#fff', border: 'none', borderRadius: '7px', cursor: 'pointer', fontWeight: '600' }}
@@ -692,7 +695,7 @@ export default function DashboardPage() {
                       <td style={s.td} onClick={(e) => e.stopPropagation()}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                           <ConfirmedBadge confirmed={duty.attendance_confirmed} />
-                          {canConfirm && (
+                          {canConfirmDuty(duty) && (
                             <button
                               style={{ fontSize: '11px', padding: '3px 8px', backgroundColor: '#1a73e8', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: '600' }}
                               onClick={(e) => openConfirmModal(duty, e)}
