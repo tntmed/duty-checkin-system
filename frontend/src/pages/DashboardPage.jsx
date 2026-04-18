@@ -315,8 +315,9 @@ export default function DashboardPage() {
 
   const handleLogout = () => { logout(); navigate('/login', { replace: true }) }
 
-  // Current user can confirm if admin OR has a สิบเวร duty on the displayed date
-  const canConfirm = user?.is_admin === 1 ||
+  // Current user can confirm if admin OR assigned role สิบเวร OR has สิบเวร duty today
+  const canConfirm = Number(user?.is_admin) === 1 ||
+    user?.roles?.some(r => r.name === 'สิบเวร') ||
     duties.some(d => d.user_id === user?.id && d.role_name === 'สิบเวร')
 
   const openConfirmModal = (duty, e) => {
