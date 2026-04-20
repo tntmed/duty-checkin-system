@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true });
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>System Documentation</h1>
+
+    <h2>1. System Overview</h2>
+    <p><strong>System Name:</strong> Duty Check-in System</p>
+    <p><strong>Description:</strong> A production-ready duty check-in management system for shift-based operations.</p>
+
+    <h2>2. Architecture</h2>
+    <h3>Backend</h3>
+    <ul>
+        <li><strong>Framework:</strong> FastAPI</li>
+        <li><strong>Database:</strong> SQLite</li>
+        <li><strong>ORM:</strong> SQLAlchemy</li>
+        <li><strong>Authentication:</strong> JWT (using <code>jose</code> library)</li>
+    </ul>
+    <h3>Frontend</h3>
+    <ul>
+        <li><strong>Framework:</strong> React</li>
+        <li><strong>Build Tool:</strong> Vite</li>
+        <li><strong>State Management:</strong> Context API</li>
+        <li><strong>Routing:</strong> React Router</li>
+    </ul>
+
+    <h2>3. Data Dictionary</h2>
+    <p>Detailed information about database tables, columns, data types, and relationships.</p>
+    <p><strong>ER Diagram in Mermaid format:</strong></p>
+    <div class="mermaid">
+erDiagram
+    users ||--o{ user_roles : "assigned"
+    roles ||--o{ user_roles : "assigned"
+    roles ||--o{ checklist_templates : "has"
+    duties ||--o{ checklist_logs : "logs"
+    checklist_templates ||--o{ checklist_logs : "template"
+    duties ||--o{ incidents : "reports"
+    users ||--o{ incidents : "assigned"
+    duties ||--o{ attachments : "has"
+    checklist_logs ||--o{ attachments : "has"
+    incidents ||--o{ attachments : "has"
+
+    users {
+        Integer id PK
+        String employee_code
+        String full_name
+        String email
+        String hashed_password
+        Integer is_active
+        Integer is_admin
+        DateTime created_at
+    }
+
+    roles {
+        Integer id PK
+        String name
+        String description
+    }
+
+    user_roles {
+        Integer user_id PK, FK
+        Integer role_id PK, FK
+    }
+
+    duties {
+        Integer id PK
+        Date duty_date
+        Integer role_id FK
+        Integer shift_id FK
+        DateTime checkin_time
+        DateTime checkout_time
+        String attendance_status
+    }
+
+    shifts {
+        Integer id PK
+        String name
+        String start_time
+        String end_time
+    }
+
+    checklist_templates {
+        Integer id PK
+        Integer role_id FK
+        Integer item_order
+        String item_text
+        Integer is_required
+        Integer is_active
+        DateTime created_at
+    }
+
+    checklist_logs {
+        Integer id PK
+        Integer duty_id FK
+        Integer template_id FK
+        String status
+        String remark
+        DateTime checked_at
+    }
+
+    incidents {
+        Integer id PK
+        Integer duty_id FK
+        String incident_type
+        String detail
+        String impact
+        String status
+        DateTime reported_at
+        DateTime resolved_at
+        Integer assigned_to FK
+        String assigned_to_external
+        String resolution_note
+    }
+
+    attachments {
+        Integer id PK
+        String file_name
+        String file_path
+        Integer file_size
+        String mime_type
+        Integer duty_id FK
+        Integer checklist_log_id FK
+        Integer incident_id FK
+        DateTime uploaded_at
+    }
+    </div>
+
+    <h2>4. Metadata</h2>
+    <h3>Modules</h3>
+    <ul>
+        <li><strong>Auth:</strong> Authentication & Authorization</li>
+        <li><strong>Duties:</strong> Duty management (check-in, check-out, attachments)</li>
+        <li><strong>Incidents:</strong> Incident reporting and workflow management</li>
+        <li><strong>Users:</strong> User management and role assignment</li>
+    </ul>
+
+    <h2>5. Data Flow</h2>
+    <h3>Login</h3>
+    <p><strong>UI:</strong> LoginPage.jsx → <strong>API:</strong> POST /auth/login → <strong>Backend:</strong> auth.py → <strong>Database:</strong> users</p>
+
+    <h3>Check-in</h3>
+    <p><strong>UI:</strong> CheckinPage.jsx → <strong>API:</strong> POST /duties/checkin → <strong>Backend:</strong> duties.py → <strong>Database:</strong> duties</p>
+
+    <h3>Incident Creation</h3>
+    <p><strong>UI:</strong> IncidentDetailPage.jsx → <strong>API:</strong> POST /duties/{duty_id}/incidents → <strong>Backend:</strong> incidents.py → <strong>Database:</strong> incidents</p>
+
+    <h2>6. API Structure</h2>
+    <h3>Auth Module</h3>
+    <ul>
+        <li><code>POST /auth/login</code> - User login</li>
+        <li><code>GET /users/me</code> - Get current user info</li>
+    </ul>
+    <h3>Duties Module</h3>
+    <ul>
+        <li><code>POST /duties/checkin</code> - Check-in for duty</li>
+        <li><code>GET /duties/today</code> - List today's duties</li>
+        <li><code>POST /duties/{duty_id}/checkout</code> - Check-out from duty</li>
+        <li><code>GET /duties/{duty_id}/attachments</code> - List duty attachments</li>
+        <li><code>POST /duties/{duty_id}/upload</code> - Upload file for duty</li>
+    </ul>
+    <h3>Incidents Module</h3>
+    <ul>
+        <li><code>POST /duties/{duty_id}/incidents</code> - Create incident</li>
+        <li><code>GET /incidents/{incident_id}</code> - Get incident details</li>
+        <li><code>PATCH /incidents/{incident_id}/workflow</code> - Update incident workflow</li>
+        <li><code>POST /incidents/{incident_id}/upload</code> - Upload file for incident</li>
+    </ul>
+    <h3>Users Module</h3>
+    <ul>
+        <li><code>GET /users/</code> - List all users</li>
+        <li><code>GET /users/assignable</code> - List assignable users</li>
+        <li><code>GET /users/me/roles</code> - Get current user's roles</li>
+    </ul>
+
+    <h2>7. Business Rules</h2>
+    <h3>Validation Rules</h3>
+    <ul>
+        <li><code>email</code> must be a valid email format</li>
+        <li><code>role_id</code> and <code>shift_id</code> must exist in the database</li>
+    </ul>
+    <h3>Required Fields</h3>
+    <ul>
+        <li><strong>User:</strong> <code>employee_code</code>, <code>full_name</code>, <code>email</code>, <code>password</code></li>
+        <li><strong>Duty:</strong> <code>role_id</code>, <code>shift_id</code></li>
+        <li><strong>Incident:</strong> None (all fields are optional)</li>
+    </ul>
+    <h3>Constraints</h3>
+    <ul>
+        <li>All tables have a primary key (<code>id</code>)</li>
+        <li><code>users.email</code> and <code>users.employee_code</code> must be unique</li>
+        <li><code>roles.name</code> must be unique</li>
+        <li><code>user_roles</code> uses a composite primary key (<code>user_id</code>, <code>role_id</code>)</li>
+    </ul>
+    <h3>Logic Before Commit</h3>
+    <ul>
+        <li><strong>Incident:</strong> Created with default status "OPEN"</li>
+        <li><strong>Role:</strong> Checks for duplicate role names before creation</li>
+        <li><strong>Duty:</strong> Validates <code>role_id</code> and <code>shift_id</code> before creation</li>
+    </ul>
+</body>
+</html>
