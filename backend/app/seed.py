@@ -15,7 +15,7 @@ ADMINS = {"tntmed", "kasom"}
 
 USERS = [
     # (employee_code, full_name, email, tel, sub_department)
-    ("kasom",   "นพ.กสม ภังคานนท์",           "kasombgn@pcm.ac.th",        "0818456844", None),
+    ("kasom",   "นพ. กศม ภังคานนท์",           "kasombgn@pcm.ac.th",        "0818456844", None),
     ("tntmed",  "นพ.ธนกร เทียนศรี",            "tntmed@pcm.ac.th",          "0991988988", None),
     ("com26",   "จ.ส.อ.ชัยณรงค์ แพทย์วงษ์",    "chainarong.pw@pcm.ac.th",   "0863499290", "ช่าง"),
     ("com43",   "จ.ส.อ.จักรพงษ์ ฉัตรชานนท์",   "jakkapong.chart@pcm.ac.th", "0648600482", "ช่าง"),
