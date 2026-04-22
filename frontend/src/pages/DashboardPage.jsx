@@ -665,7 +665,7 @@ export default function DashboardPage() {
                         {duty.attendance_confirmed ? '✏️ แก้ไขสถานะ' : '✓ Confirm สถานะ'}
                       </button>
                     )}
-                    {user?.is_admin && (
+                    {Number(user?.is_admin) === 1 && (
                       <button
                         style={{ fontSize: '13px', padding: '6px 14px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '7px', cursor: 'pointer', fontWeight: '600' }}
                         onClick={(e) => { e.stopPropagation(); setDeleteModal({ open: true, duty }) }}
@@ -695,7 +695,7 @@ export default function DashboardPage() {
                     <th style={s.th}>Incidents</th>
                     <th style={s.th}>Checkout</th>
                     <th style={s.th}>ดู</th>
-                    {user?.is_admin && <th style={s.th}>ลบ</th>}
+                    {Number(user?.is_admin) === 1 && <th style={s.th}>ลบ</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -745,7 +745,7 @@ export default function DashboardPage() {
                           View →
                         </button>
                       </td>
-                      {user?.is_admin && (
+                      {Number(user?.is_admin) === 1 && (
                         <td style={s.td} onClick={(e) => e.stopPropagation()}>
                           <button
                             style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}
