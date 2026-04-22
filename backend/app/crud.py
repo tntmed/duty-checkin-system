@@ -181,6 +181,22 @@ def create_duty(db: Session, user_id: int, checkin_req: schemas.CheckinRequest) 
     if existing:
         raise ValueError(f"You have already checked in for this role and shift today (Duty #{existing.id}).")
 
+    # Prevent more than one สิบเวร per day (across all users)
+    role_obj = db.query(models.Role).filter(models.Role.id == checkin_req.role_id).first()
+    if role_obj and role_obj.name == "สิบเวร":
+        existing_sib = (
+            db.query(models.Duty)
+            .join(models.Role, models.Duty.role_id == models.Role.id)
+            .filter(
+                models.Duty.duty_date == today,
+                models.Role.name == "สิบเวร",
+            )
+            .first()
+        )
+        if existing_sib:
+            sib_name = existing_sib.user.full_name if existing_sib.user else "บุคคลอื่น"
+            raise ValueError(f"วันนี้มีสิบเวรลงเวรแล้ว ({sib_name}) ไม่สามารถลงเวรซ้ำได้")
+
     shift = db.query(models.DutyShift).filter(models.DutyShift.id == checkin_req.shift_id).first()
 
     # Auto-calculate attendance: PRESENT if within 15 min of shift start, else LATE
@@ -521,6 +537,16 @@ def confirm_attendance(
     db.commit()
     db.refresh(duty)
     return duty, None
+
+
+def delete_duty(db: Session, duty_id: int) -> bool:
+    """Delete a duty record and all cascaded data (admin only)."""
+    duty = db.query(models.Duty).filter(models.Duty.id == duty_id).first()
+    if not duty:
+        return False
+    db.delete(duty)
+    db.commit()
+    return True
 
 
 def get_attachments_by_duty(db: Session, duty_id: int) -> List[models.Attachment]:

@@ -60,6 +60,7 @@ export const confirmAttendance = (dutyId, data) => API.patch(`/duties/${dutyId}/
 export const getDutiesToday = () => API.get('/duties/today')
 export const getDuty = (dutyId) => API.get(`/duties/${dutyId}`)
 export const getDutyAttachments = (dutyId) => API.get(`/duties/${dutyId}/attachments`)
+export const deleteDuty = (dutyId) => API.delete(`/duties/${dutyId}`)
 export const uploadDutyFile = (dutyId, formData) =>
   API.post(`/duties/${dutyId}/upload`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

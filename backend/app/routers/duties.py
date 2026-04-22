@@ -161,6 +161,20 @@ def confirm_attendance(
     return _build_duty_response(duty)
 
 
+@router.delete("/{duty_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_duty(
+    duty_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a duty record and all related data. Admin only."""
+    if not int(current_user.is_admin):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
+    success = crud.delete_duty(db, duty_id=duty_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Duty not found")
+
+
 @router.get("/{duty_id}/attachments", response_model=List[schemas.AttachmentResponse])
 def get_duty_attachments(
     duty_id: int,

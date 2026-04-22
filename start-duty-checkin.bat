@@ -1,5 +1,5 @@
 @echo off
-cd /d C:\Users\Administrator\project\duty-checkin-system
+cd /d "C:\Users\LENOVO\project tk\duty-checkin-system"
 
 echo ==========================
 echo Starting Backend...

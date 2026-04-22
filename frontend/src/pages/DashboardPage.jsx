@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useIsMobile } from '../hooks/useIsMobile'
-import API, { confirmAttendance } from '../services/api'
+import API, { confirmAttendance, deleteDuty } from '../services/api'
 
 // ============================================================
 // Constants
@@ -234,6 +234,8 @@ export default function DashboardPage() {
   const [confirmStatus, setConfirmStatus] = useState('PRESENT')
   const [confirmSaving, setConfirmSaving] = useState(false)
   const [confirmError, setConfirmError] = useState('')
+  const [deleteModal, setDeleteModal] = useState({ open: false, duty: null })
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   // Active KPI filter: null | 'incidents' | 'issues' | 'pending'
   const [kpiFilter, setKpiFilter] = useState(null)
@@ -342,6 +344,20 @@ export default function DashboardPage() {
       setConfirmError(err.response?.data?.detail || 'เกิดข้อผิดพลาด')
     } finally {
       setConfirmSaving(false)
+    }
+  }
+
+  const handleDeleteDuty = async () => {
+    if (!deleteModal.duty) return
+    setDeleteLoading(true)
+    try {
+      await deleteDuty(deleteModal.duty.duty_id)
+      setDeleteModal({ open: false, duty: null })
+      loadAll()
+    } catch (err) {
+      alert(err.response?.data?.detail || 'ลบไม่สำเร็จ')
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -640,16 +656,24 @@ export default function DashboardPage() {
                       </span>
                     )}
                   </div>
-                  {canConfirmDuty(duty) && (
-                    <div style={{ marginTop: '10px' }}>
+                  <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {canConfirmDuty(duty) && (
                       <button
                         style={{ fontSize: '13px', padding: '6px 18px', backgroundColor: '#1a73e8', color: '#fff', border: 'none', borderRadius: '7px', cursor: 'pointer', fontWeight: '600' }}
                         onClick={(e) => openConfirmModal(duty, e)}
                       >
                         {duty.attendance_confirmed ? '✏️ แก้ไขสถานะ' : '✓ Confirm สถานะ'}
                       </button>
-                    </div>
-                  )}
+                    )}
+                    {user?.is_admin && (
+                      <button
+                        style={{ fontSize: '13px', padding: '6px 14px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '7px', cursor: 'pointer', fontWeight: '600' }}
+                        onClick={(e) => { e.stopPropagation(); setDeleteModal({ open: true, duty }) }}
+                      >
+                        ลบ
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -671,6 +695,7 @@ export default function DashboardPage() {
                     <th style={s.th}>Incidents</th>
                     <th style={s.th}>Checkout</th>
                     <th style={s.th}>ดู</th>
+                    {user?.is_admin && <th style={s.th}>ลบ</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -720,6 +745,16 @@ export default function DashboardPage() {
                           View →
                         </button>
                       </td>
+                      {user?.is_admin && (
+                        <td style={s.td} onClick={(e) => e.stopPropagation()}>
+                          <button
+                            style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}
+                            onClick={() => setDeleteModal({ open: true, duty })}
+                          >
+                            ลบ
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -803,6 +838,51 @@ export default function DashboardPage() {
                 disabled={confirmSaving}
               >
                 {confirmSaving ? 'กำลังบันทึก...' : '✓ บันทึก'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Duty Modal ── */}
+      {deleteModal.open && deleteModal.duty && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          padding: '16px',
+        }} onClick={() => setDeleteModal({ open: false, duty: null })}>
+          <div style={{
+            backgroundColor: '#fff', borderRadius: '14px', padding: '28px 24px', width: '100%', maxWidth: '380px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: '36px', textAlign: 'center', marginBottom: '12px' }}>🗑️</div>
+            <h3 style={{ margin: '0 0 8px', fontSize: '17px', fontWeight: '700', color: '#dc2626', textAlign: 'center' }}>
+              ยืนยันการลบเวร
+            </h3>
+            <p style={{ margin: '0 0 6px', fontSize: '14px', color: '#374151', textAlign: 'center' }}>
+              <strong>{deleteModal.duty.full_name}</strong>
+            </p>
+            <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#6b7280', textAlign: 'center' }}>
+              {deleteModal.duty.role_name} · {deleteModal.duty.shift_name}<br />
+              #{deleteModal.duty.duty_id} · วันที่ {deleteModal.duty.duty_date}
+            </p>
+            <div style={{ backgroundColor: '#fee2e2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px 14px', marginBottom: '20px', fontSize: '13px', color: '#dc2626' }}>
+              การลบจะลบข้อมูล checklist และ incident ที่เกี่ยวข้องทั้งหมด และไม่สามารถกู้คืนได้
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                style={{ padding: '9px 20px', fontSize: '13px', fontWeight: '600', backgroundColor: '#f3f4f6', border: '1.5px solid #d1d5db', color: '#374151', borderRadius: '8px', cursor: 'pointer' }}
+                onClick={() => setDeleteModal({ open: false, duty: null })}
+                disabled={deleteLoading}
+              >
+                ยกเลิก
+              </button>
+              <button
+                style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '9px 24px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }}
+                onClick={handleDeleteDuty}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? 'กำลังลบ...' : 'ยืนยันลบ'}
               </button>
             </div>
           </div>
