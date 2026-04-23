@@ -276,16 +276,25 @@ def get_duty(db: Session, duty_id: int) -> Optional[models.Duty]:
     if duty and duty.shift:
         expected_checkout = _calc_checkout_time(duty.duty_date, duty.shift)
         now = _now()
-        if duty.checkout_time is not None and duty.checkout_time > now:
-            # Clear future checkout_time left by old auto-checkout logic
+        # Clear invalid checkouts: future time OR before checkin time
+        if duty.checkout_time is not None and (
+            duty.checkout_time > now or
+            duty.checkout_time <= duty.checkin_time
+        ):
             duty.checkout_time = None
             db.commit()
             db.refresh(duty)
-        elif duty.checkout_time is None and now >= expected_checkout:
-            # Auto-checkout when shift end time has passed
-            duty.checkout_time = expected_checkout
-            db.commit()
-            db.refresh(duty)
+        if duty.checkout_time is None and now >= expected_checkout:
+            # If expected checkout is at or before checkin, push to midnight of next day
+            if expected_checkout <= duty.checkin_time:
+                expected_checkout = datetime.combine(
+                    duty.checkin_time.date() + timedelta(days=1),
+                    datetime.min.time()
+                )
+            if now >= expected_checkout:
+                duty.checkout_time = expected_checkout
+                db.commit()
+                db.refresh(duty)
     return duty
 
 
