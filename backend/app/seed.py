@@ -66,30 +66,31 @@ def seed(db: Session) -> None:
         db.flush()
 
     # ── Shifts ─────────────────────────────────────────────────────────────
+    # (name, start_time, end_time, is_active)
     SHIFTS = [
-        ("เวรนอกเวลา วันราชการ",  "16:00", "20:00"),
-        ("เวรนอกเวลา วันหยุด",    "08:30", "12:30"),
-        ("วันราชการ",             "16:00", "24:00"),
-        ("เวรวันราชการ",          "16:00", "08:00"),
-        ("วันหยุด",               "08:00", "08:00"),
-        ("วันราชการ กลางคืน",     "00:00", "08:00"),
-        ("วันหยุด รอบเช้า",        "08:00", "20:00"),
-        ("วันหยุด รอบค่ำ",         "20:00", "08:00"),
+        ("เวรนอกเวลา วันราชการ",  "16:00", "20:00", 1),
+        ("เวรนอกเวลา วันหยุด",    "08:00", "12:00", 1),
+        ("วันราชการ",             "16:00", "00:00", 1),
+        ("เวรวันราชการ",          "16:00", "08:00", 1),
+        ("วันหยุด",               "08:00", "08:00", 1),
+        ("วันราชการ กลางคืน",     "00:00", "08:00", 1),
+        ("วันหยุด รอบเช้า",        "08:00", "20:00", 0),
+        ("วันหยุด รอบค่ำ",         "20:00", "08:00", 0),
     ]
     if db.query(models.DutyShift).count() == 0:
-        db.add_all([models.DutyShift(name=n, start_time=s, end_time=e) for n, s, e in SHIFTS])
+        db.add_all([models.DutyShift(name=n, start_time=s, end_time=e, is_active=a) for n, s, e, a in SHIFTS])
         db.flush()
     else:
         existing = db.query(models.DutyShift).order_by(models.DutyShift.id).all()
         for i, shift in enumerate(existing):
             if i < len(SHIFTS):
-                shift.name, shift.start_time, shift.end_time = SHIFTS[i]
-                shift.is_active = 1
+                n, s, e, a = SHIFTS[i]
+                shift.name, shift.start_time, shift.end_time, shift.is_active = n, s, e, a
             else:
                 shift.is_active = 0  # ปิด shift เกิน
         for i in range(len(existing), len(SHIFTS)):
-            n, s, e = SHIFTS[i]
-            db.add(models.DutyShift(name=n, start_time=s, end_time=e))
+            n, s, e, a = SHIFTS[i]
+            db.add(models.DutyShift(name=n, start_time=s, end_time=e, is_active=a))
         db.flush()
 
     # ── Checklist Templates ────────────────────────────────────────────────
