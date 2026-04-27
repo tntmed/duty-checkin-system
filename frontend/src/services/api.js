@@ -99,4 +99,46 @@ export const importUsersExcel = (formData) =>
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 
+// ============================================================
+// Face Recognition Service (port 8001)
+// ============================================================
+const FACE_API = axios.create({
+  baseURL: import.meta.env.VITE_FACE_API_URL || 'http://localhost:8001',
+})
+
+export const faceEnroll = (employeeId, formData) =>
+  FACE_API.post(`/enroll/${employeeId}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+
+export const faceListEnrolled = () => FACE_API.get('/enroll')
+
+export const faceDeleteEnrollment = (employeeId) =>
+  FACE_API.delete(`/enroll/${employeeId}`)
+
+export const faceRecognize = (formData) =>
+  FACE_API.post('/recognize', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+
+export const adminBulkCheckin = (items) => API.post('/duties/admin-checkin', items)
+
+export const faceLearn = (formData) =>
+  FACE_API.post('/learn', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+
+// Separate instance for proxy — no 401 redirect (tk token expiry ≠ local logout)
+const PROXY_API = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api',
+})
+PROXY_API.interceptors.request.use(config => {
+  const token = localStorage.getItem('token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+export const proxyTkDuties = (duty_date, tk_token) =>
+  PROXY_API.get('/proxy/tk/duties', { params: { duty_date, tk_token } })
+
 export default API

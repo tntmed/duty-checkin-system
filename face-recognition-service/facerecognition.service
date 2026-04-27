@@ -1,0 +1,14 @@
+[Unit]
+Description=Face Recognition Service
+After=network.target
+
+[Service]
+User=tk
+WorkingDirectory=/opt/facerecognition
+Environment="PATH=/opt/facerecognition/venv/bin"
+ExecStart=/opt/facerecognition/venv/bin/python run.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

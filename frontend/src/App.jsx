@@ -10,6 +10,8 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
 import AdminUsersPage from './pages/AdminUsersPage'
+import FaceEnrollPage from './pages/FaceEnrollPage'
+import FaceCheckinPage from './pages/FaceCheckinPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -50,6 +52,8 @@ function AppRoutes() {
       <Route path="/import-users" element={<AdminRoute><ImportUsersPage /></AdminRoute>} />
       <Route path="/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
       <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
+      <Route path="/admin/face-enroll" element={<AdminRoute><FaceEnrollPage /></AdminRoute>} />
+      <Route path="/admin/face-checkin" element={<AdminRoute><FaceCheckinPage /></AdminRoute>} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="*" element={<Navigate to="/checkin" replace />} />

@@ -131,6 +131,12 @@ class CheckinRequest(BaseModel):
     notes: Optional[str] = None
 
 
+class AdminCheckinItem(BaseModel):
+    user_id: int
+    role_id: int
+    shift_id: int
+
+
 class AttendanceConfirmRequest(BaseModel):
     attendance_status: AttendanceStatus
 

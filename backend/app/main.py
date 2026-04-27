@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
-from .routers import auth, users, roles, duties, checklists, incidents, dashboard
+from .routers import auth, users, roles, duties, checklists, incidents, dashboard, proxy
 from .db import engine, Base, SessionLocal
 from . import models
 from .seed import seed
@@ -23,6 +23,10 @@ Base.metadata.create_all(bind=engine)
 _migrations = [
     "ALTER TABLE users ADD COLUMN is_admin NUMERIC(1) NOT NULL DEFAULT 0",
     "ALTER TABLE incidents ADD COLUMN assigned_to_external VARCHAR(500)",
+    "ALTER TABLE duties ADD COLUMN attendance_confirmed NUMERIC(1) DEFAULT 0",
+    "ALTER TABLE duties ADD COLUMN attendance_confirmed_by VARCHAR(100)",
+    "ALTER TABLE duties ADD COLUMN attendance_confirmed_at DATETIME",
+    "ALTER TABLE duties ADD COLUMN notes TEXT",
 ]
 with engine.connect() as _conn:
     for _sql in _migrations:
@@ -68,6 +72,7 @@ app.include_router(duties.router, prefix="/duties", tags=["Duties"])
 app.include_router(checklists.router, tags=["Checklists"])
 app.include_router(incidents.router, tags=["Incidents"])
 app.include_router(dashboard.router, tags=["Dashboard"])
+app.include_router(proxy.router, tags=["Proxy"])
 
 
 @app.get("/health", tags=["Health"])

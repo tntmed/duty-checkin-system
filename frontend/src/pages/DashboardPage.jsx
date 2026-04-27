@@ -420,6 +420,13 @@ export default function DashboardPage() {
         </div>
         <div style={s.navRight}>
           {!isMobile && <span style={{ fontSize: '13px', opacity: 0.8 }}>{user?.full_name}</span>}
+          {Number(user?.is_admin) === 1 && !isMobile && (
+            <>
+              <button style={{ ...s.navBtn, backgroundColor: 'rgba(255,255,255,0.2)' }} onClick={() => navigate('/admin/face-enroll')}>จัดการรูปใบหน้า</button>
+              <button style={{ ...s.navBtn, backgroundColor: 'rgba(255,255,255,0.2)' }} onClick={() => navigate('/admin/face-checkin')}>วิเคราะห์รูปเวร</button>
+              <button style={{ ...s.navBtn, backgroundColor: 'rgba(255,255,255,0.2)' }} onClick={() => navigate('/admin/users')}>จัดการผู้ใช้</button>
+            </>
+          )}
           <button style={s.navBtn} onClick={() => navigate('/checkin')}>{isMobile ? '← เวร' : '← Check-in'}</button>
           <button style={{ ...s.navBtn, borderColor: 'rgba(220,38,38,0.5)' }} onClick={handleLogout}>ออก</button>
         </div>

@@ -98,6 +98,27 @@ def checkin(
     return _build_duty_response(duty)
 
 
+@router.post("/admin-checkin", status_code=status.HTTP_200_OK)
+def admin_bulk_checkin(
+    items: list[schemas.AdminCheckinItem],
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Admin: check in multiple users at once (for face-recognition photo upload)."""
+    if not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
+
+    results = []
+    for item in items:
+        try:
+            req = schemas.CheckinRequest(role_id=item.role_id, shift_id=item.shift_id)
+            duty = crud.create_duty(db, user_id=item.user_id, checkin_req=req)
+            results.append({"user_id": item.user_id, "duty_id": duty.id, "status": "ok"})
+        except Exception as e:
+            results.append({"user_id": item.user_id, "duty_id": None, "status": str(e)})
+    return {"results": results}
+
+
 @router.post("/{duty_id}/checkout", response_model=schemas.DutyResponse)
 def checkout(
     duty_id: int,

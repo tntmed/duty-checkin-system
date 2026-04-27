@@ -83,12 +83,8 @@ export default function CheckinPage() {
       setRoles(rolesData)
       setShifts(shiftsData)
       setActiveDuties(dutiesRes.data || [])
-      if (rolesData.length > 0) {
-        setSelectedRole(String(rolesData[0].id))
-        const allowed = ROLE_SHIFT_MAP[rolesData[0].name] || []
-        const filtered = shiftsData.filter(s => allowed.includes(s.name))
-        if (filtered.length > 0) setSelectedShift(String(filtered[0].id))
-      }
+      setSelectedRole('')
+      setSelectedShift('')
     } catch {
       setError('Failed to load data. Please refresh the page.')
     } finally {
@@ -292,7 +288,8 @@ export default function CheckinPage() {
                   }}
                   required
                 >
-                  {roles.length === 0 && <option value="">No roles assigned</option>}
+                  <option value="">-- กรุณาเลือกตำแหน่งเวร --</option>
+                  {roles.length === 0 && <option value="" disabled>No roles assigned</option>}
                   {roles.map(r => <option key={r.id} value={String(r.id)}>{r.name}</option>)}
                 </select>
               </div>
