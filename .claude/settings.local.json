@@ -55,7 +55,20 @@
       "Bash(python \"c:/Users/ADMIN/duty-checkin-system/backend\" -c \"import sqlite3; conn=sqlite3.connect\\('c:/Users/ADMIN/duty-checkin-system/backend/duty_checkin.db'\\); rows=conn.execute\\('SELECT employee_code, full_name, is_admin FROM users WHERE is_admin=1'\\).fetchall\\(\\); print\\(rows\\)\")",
       "Bash(python -c \"import sqlite3; conn=sqlite3.connect\\('c:/Users/ADMIN/duty-checkin-system/backend/duty_checkin.db'\\); rows=conn.execute\\('SELECT employee_code, full_name, is_admin FROM users WHERE is_admin=1'\\).fetchall\\(\\); print\\(rows\\)\")",
       "Bash(pip install *)",
-      "Bash(powershell -Command ' *)"
+      "Bash(powershell -Command ' *)",
+      "Bash(plink -ssh tk@192.168.164.78 -pw 19 -batch \"cd /opt/dutycheckin && git pull origin main 2>&1 | tail -5\")",
+      "Bash(plink -ssh tk@192.168.164.78 -pw 19 -batch \"cd /opt/dutycheckin && git pull origin main 2>&1 | tail -5 && pip install httpx -q && echo PULLED\")",
+      "Bash(plink -ssh tk@192.168.164.78 -pw 19 -batch \"cd /opt/dutycheckin && git checkout -- frontend/dist/index.html && git pull origin main 2>&1 | tail -3 && echo DONE\")",
+      "Bash(plink -ssh tk@192.168.164.78 -pw 19 -batch \"echo '19' | sudo -S bash -c 'rm -rf /var/www/dutycheckin && cp -r /opt/dutycheckin/frontend/dist /var/www/dutycheckin && systemctl restart dutycheckin && systemctl reload nginx && echo DONE'\")",
+      "Bash(plink -ssh tk@192.168.164.78 -pw 19 -batch \"sudo systemctl status dutycheckin --no-pager | tail -15\")",
+      "Bash(plink -ssh tk@192.168.164.78 -pw 19 -batch \"echo '19' | sudo -S systemctl status dutycheckin --no-pager 2>&1 | tail -20\")",
+      "Bash(plink -ssh tk@192.168.164.78 -pw 19 -batch \"echo '19' | sudo -S journalctl -u dutycheckin --no-pager -n 20 2>&1 | tail -20\")",
+      "Bash(plink -ssh tk@192.168.164.78 -pw 19 -batch \"/opt/dutycheckin/venv/bin/pip install httpx -q && echo '19' | sudo -S systemctl restart dutycheckin && echo DONE\")",
+      "Bash(plink -ssh tk@192.168.164.78 -pw 19 -batch \"echo '19' | sudo -S systemctl status dutycheckin --no-pager 2>&1 | grep 'Active:'\")",
+      "Bash(plink -ssh tk@192.168.164.78 -pw 19 -batch \"echo '19' | sudo -S nginx -t 2>&1 && ls /var/www/dutycheckin/ && ls /var/www/dutycheckin/assets/\")",
+      "Bash(plink -ssh tk@192.168.164.78 -pw 19 -batch \"ls /opt/dutycheckin/frontend/dist/assets/\")",
+      "Bash(plink -ssh tk@192.168.164.78 -pw 19 -batch \"cd /opt/dutycheckin && git pull origin main 2>&1 | tail -3\")",
+      "Bash(plink -ssh tk@192.168.164.78 -pw 19 -batch \"cd /opt/dutycheckin && git pull origin main 2>&1 | tail -3 && echo '19' | sudo -S systemctl restart dutycheckin && echo DONE\")"
     ]
   }
 }

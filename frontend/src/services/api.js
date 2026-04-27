@@ -100,31 +100,27 @@ export const importUsersExcel = (formData) =>
   })
 
 // ============================================================
-// Face Recognition Service (port 8001)
+// Face Recognition — routed through main backend proxy
 // ============================================================
-const FACE_API = axios.create({
-  baseURL: import.meta.env.VITE_FACE_API_URL || 'http://localhost:8001',
-})
-
 export const faceEnroll = (employeeId, formData) =>
-  FACE_API.post(`/enroll/${employeeId}`, formData, {
+  API.post(`/proxy/face/enroll/${employeeId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 
-export const faceListEnrolled = () => FACE_API.get('/enroll')
+export const faceListEnrolled = () => API.get('/proxy/face/enroll')
 
 export const faceDeleteEnrollment = (employeeId) =>
-  FACE_API.delete(`/enroll/${employeeId}`)
+  API.delete(`/proxy/face/enroll/${employeeId}`)
 
 export const faceRecognize = (formData) =>
-  FACE_API.post('/recognize', formData, {
+  API.post('/proxy/face/recognize', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 
 export const adminBulkCheckin = (items) => API.post('/duties/admin-checkin', items)
 
 export const faceLearn = (formData) =>
-  FACE_API.post('/learn', formData, {
+  API.post('/proxy/face/learn', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 
