@@ -205,10 +205,10 @@ def create_duty(db: Session, user_id: int, checkin_req: schemas.CheckinRequest) 
         sh, sm = map(int, shift.start_time.split(':'))
         shift_start = datetime.combine(today, datetime.min.time()).replace(hour=sh, minute=sm)
         if sh == 0 and sm == 0:
-            # เวรกลางคืน (00:00-08:00): PRESENT ถ้า checkin ระหว่าง 22:00 คืนก่อน ถึง 00:30
-            window_start = shift_start - timedelta(hours=2)   # 22:00 คืนก่อน
-            window_end   = shift_start + timedelta(minutes=30)
-            attendance_status = "PRESENT" if window_start <= now <= window_end else "LATE"
+            # เวรกลางคืน (00:00-08:00): PRESENT ถ้า checkin ก่อน 00:30
+            # (ครอบคลุมทั้งลงล่วงหน้าตอนบ่าย/เย็น และลงตอนเที่ยงคืน)
+            window_end = shift_start + timedelta(minutes=30)
+            attendance_status = "PRESENT" if now <= window_end else "LATE"
         else:
             attendance_status = "PRESENT" if now <= shift_start + timedelta(minutes=15) else "LATE"
 
