@@ -1,7 +1,11 @@
 """Proxy router: forward requests to tk server and face recognition service."""
 import httpx
-from fastapi import APIRouter, Query, HTTPException, Request, UploadFile, File, Form
+from fastapi import APIRouter, Query, HTTPException, Request, UploadFile, File, Form, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+
+from ..db import get_db
+from .. import crud
 
 router = APIRouter(prefix="/proxy", tags=["proxy"])
 
@@ -26,7 +30,14 @@ async def proxy_tk_duties(
             resp.raise_for_status()
             return resp.json()
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail="tk server error")
+            try:
+                body = e.response.json()
+            except Exception:
+                body = e.response.text
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"tk server {e.response.status_code}: {body}",
+            )
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"ไม่สามารถเชื่อมต่อ tk server: {e}")
 
@@ -64,14 +75,24 @@ async def face_delete_enroll(employee_id: int):
 
 
 @router.post("/face/recognize")
-async def face_recognize(file: UploadFile = File(...)):
+async def face_recognize(file: UploadFile = File(...), db: Session = Depends(get_db)):
     data = await file.read()
     async with httpx.AsyncClient(timeout=120) as client:
         resp = await client.post(
             f"{FACE_BASE}/recognize",
             files={"file": (file.filename, data, file.content_type)},
         )
-        return JSONResponse(status_code=resp.status_code, content=resp.json())
+    result = resp.json()
+    # Enrich each recognized face with employee_code + full_name from DB
+    # in case the face service has stale/missing metadata from older enrollments.
+    for r in result.get("results", []):
+        if r.get("employee_id"):
+            user = crud.get_user(db, r["employee_id"])
+            if user:
+                r["employee_code"] = user.employee_code
+                if not r.get("full_name"):
+                    r["full_name"] = user.full_name
+    return JSONResponse(status_code=resp.status_code, content=result)
 
 
 @router.post("/face/learn")
