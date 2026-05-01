@@ -89,7 +89,7 @@ def recognize_faces(image_rgb: np.ndarray) -> list[dict]:
     known_ids = [p[0] for p in known_pairs]
     known_encs = [p[1] for p in known_pairs]
 
-    locations = face_recognition.face_locations(image_rgb, model="hog")
+    locations = face_recognition.face_locations(image_rgb, model="hog", number_of_times_to_upsample=2)
     encodings = face_recognition.face_encodings(image_rgb, locations)
 
     results = []

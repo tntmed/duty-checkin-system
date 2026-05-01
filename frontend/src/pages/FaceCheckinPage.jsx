@@ -106,8 +106,7 @@ export default function FaceCheckinPage() {
         const user = usersMap[r.employee_id]
         selRoles[i] = matchedRole ? matchedRole.id : (user?.roles?.[0]?.id ?? '')
         selShifts[i] = ''
-        // รวมเฉพาะคนที่ OCR อ่านป้ายได้ (ถือป้าย) และจำหน้าได้
-        selIncluded[i] = r.identified && !!r.shift_text
+        selIncluded[i] = r.identified
       })
       setSelectedShifts(selShifts)
       setSelectedRoles(selRoles)

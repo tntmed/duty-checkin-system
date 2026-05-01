@@ -19,8 +19,8 @@ npm install
 npm run build
 
 echo "=== [4/4] Copy frontend build & restart ==="
-rm -rf $WEB_DIR
-cp -r $APP_DIR/frontend/dist $WEB_DIR
+sudo rm -rf $WEB_DIR
+sudo cp -r $APP_DIR/frontend/dist $WEB_DIR
 sudo systemctl restart dutycheckin
 sudo systemctl reload nginx
 
